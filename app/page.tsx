@@ -27,6 +27,10 @@ export default function RentalDashboard() {
   const [loading, setLoading] = useState(true);
   const [editingFlat, setEditingFlat] = useState<Flat | null>(null);
   const [saving, setSaving] = useState(false);
+  
+  // Search and Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'UNPAID'>('ALL');
 
   const fetchFlats = async () => {
     setLoading(true);
@@ -86,6 +90,18 @@ export default function RentalDashboard() {
   const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
   const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
 
+  // Filtered Flats Logic
+  const filteredFlats = flats.filter((flat) => {
+    const matchesSearch = 
+      flat.flat_no.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      flat.tenant_name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = 
+      statusFilter === 'ALL' || flat.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <main className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -113,12 +129,55 @@ export default function RentalDashboard() {
           </div>
         </div>
 
+        {/* Search and Filter Controls */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-3 justify-between items-center">
+          <div className="w-full sm:w-80">
+            <input
+              type="text"
+              placeholder="🔍 Search flat no or tenant name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-gray-50"
+            />
+          </div>
+          <div className="flex gap-1.5 w-full sm:w-auto">
+            <button
+              onClick={() => setStatusFilter('ALL')}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                statusFilter === 'ALL' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              All Flats
+            </button>
+            <button
+              onClick={() => setStatusFilter('PAID')}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                statusFilter === 'PAID' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              }`}
+            >
+              Paid
+            </button>
+            <button
+              onClick={() => setStatusFilter('UNPAID')}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                statusFilter === 'UNPAID' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+              }`}
+            >
+              Unpaid
+            </button>
+          </div>
+        </div>
+
         {/* Flats Grid */}
         {loading ? (
           <div className="text-center py-20 text-gray-500">Loading flat details...</div>
+        ) : filteredFlats.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 text-gray-500">
+            No flats found matching your search criteria.
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {flats.map((flat) => {
+            {filteredFlats.map((flat) => {
               const electricity = flat.electricity_bill || 0;
               const water = flat.water_bill || 0;
               const maintenance = flat.maintenance || 0;
