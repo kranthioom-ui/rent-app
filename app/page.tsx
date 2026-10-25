@@ -15,7 +15,9 @@ interface Flat {
   tenant_name: string;
   phone: string;
   rent: number;
+  electricity_bill: number;
   water_bill: number;
+  maintenance: number;
   status: 'PAID' | 'UNPAID';
   paid_amount: number;
 }
@@ -54,7 +56,7 @@ export default function RentalDashboard() {
     if (!editingFlat) return;
     setSaving(true);
 
-    const totalDue = Number(editingFlat.rent) + Number(editingFlat.water_bill || 0);
+    const totalDue = Number(editingFlat.rent) + Number(editingFlat.electricity_bill || 0) + Number(editingFlat.water_bill || 0) + Number(editingFlat.maintenance || 0);
     const paid_amount = editingFlat.status === 'PAID' ? totalDue : 0;
 
     const { error } = await supabase
@@ -63,7 +65,9 @@ export default function RentalDashboard() {
         tenant_name: editingFlat.tenant_name,
         phone: editingFlat.phone,
         rent: Number(editingFlat.rent),
-        water_bill: Number(editingFlat.water_bill),
+        electricity_bill: Number(editingFlat.electricity_bill || 0),
+        water_bill: Number(editingFlat.water_bill || 0),
+        maintenance: Number(editingFlat.maintenance || 0),
         status: editingFlat.status,
         paid_amount: paid_amount
       })
@@ -79,8 +83,8 @@ export default function RentalDashboard() {
     }
   };
 
-  const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.water_bill || 0)), 0);
-  const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.water_bill || 0)), 0);
+  const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
+  const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
 
   return (
     <main className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -89,7 +93,7 @@ export default function RentalDashboard() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Rental Management Dashboard</h1>
-            <p className="text-sm text-gray-500">20 Residential Flats - Enforced Full Payment System</p>
+            <p className="text-sm text-gray-500">20 Residential Flats - Full Itemized Payment System</p>
           </div>
           <div className="flex gap-4">
             <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">
@@ -115,14 +119,18 @@ export default function RentalDashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {flats.map((flat) => {
+              const electricity = flat.electricity_bill || 0;
               const water = flat.water_bill || 0;
-              const totalDue = flat.rent + water;
+              const maintenance = flat.maintenance || 0;
+              const totalDue = flat.rent + electricity + water + maintenance;
 
               const whatsappMessage = encodeURIComponent(
                 `Hello ${flat.tenant_name},\n\n` +
-                `Here is your rent bill breakdown for Flat ${flat.flat_no}:\n` +
+                `Here is your itemized rent bill breakdown for Flat ${flat.flat_no}:\n` +
                 `• Base Rent: ₹${flat.rent.toLocaleString('en-IN')}\n` +
+                `• Electricity: ₹${electricity.toLocaleString('en-IN')}\n` +
                 `• Water Bill: ₹${water.toLocaleString('en-IN')}\n` +
+                `• Maintenance: ₹${maintenance.toLocaleString('en-IN')}\n` +
                 `-----------------------------\n` +
                 `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
                 `Pay directly via GPay / PhonePe / Paytm using this locked UPI link:\n` +
@@ -159,7 +167,9 @@ export default function RentalDashboard() {
                     {/* Bill Breakdown */}
                     <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1 mb-4 text-gray-600">
                       <div className="flex justify-between"><span>Base Rent:</span> <span>₹{flat.rent.toLocaleString('en-IN')}</span></div>
+                      <div className="flex justify-between"><span>Electricity:</span> <span>₹{electricity.toLocaleString('en-IN')}</span></div>
                       <div className="flex justify-between"><span>Water Bill:</span> <span>₹{water.toLocaleString('en-IN')}</span></div>
+                      <div className="flex justify-between"><span>Maintenance:</span> <span>₹{maintenance.toLocaleString('en-IN')}</span></div>
                       <div className="border-t border-gray-200 pt-1 mt-1 flex justify-between font-bold text-gray-900">
                         <span>Total Due:</span> <span>₹{totalDue.toLocaleString('en-IN')}</span>
                       </div>
@@ -201,7 +211,7 @@ export default function RentalDashboard() {
         {/* Edit Tenant Modal */}
         {editingFlat && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-gray-100 space-y-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-gray-100 space-y-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center border-b border-gray-100 pb-3">
                 <h3 className="text-lg font-bold text-gray-900">Edit Flat {editingFlat.flat_no}</h3>
                 <button 
@@ -247,11 +257,34 @@ export default function RentalDashboard() {
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Electricity (₹)</label>
+                    <input
+                      type="number"
+                      value={editingFlat.electricity_bill}
+                      onChange={(e) => setEditingFlat({ ...editingFlat, electricity_bill: Number(e.target.value) })}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Water Bill (₹)</label>
                     <input
                       type="number"
                       value={editingFlat.water_bill}
                       onChange={(e) => setEditingFlat({ ...editingFlat, water_bill: Number(e.target.value) })}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Maintenance (₹)</label>
+                    <input
+                      type="number"
+                      value={editingFlat.maintenance}
+                      onChange={(e) => setEditingFlat({ ...editingFlat, maintenance: Number(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
