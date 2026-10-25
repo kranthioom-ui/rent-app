@@ -320,6 +320,45 @@ export default function RentalDashboard() {
           </div>
         )}
 
+        {/* Hidden Compact Print Report Layout for PDF */}
+        <div className="hidden print:block bg-white p-6 space-y-4">
+          <div className="border-b pb-4 flex justify-between items-center">
+            <div>
+              <h1 className="text-xl font-bold">Rental Management Summary Report</h1>
+              <p className="text-xs text-gray-500">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+            </div>
+            <div className="text-right text-xs">
+              <p><strong>Collected:</strong> ₹{totalCollected.toLocaleString('en-IN')}</p>
+              <p><strong>Pending:</strong> ₹{totalPending.toLocaleString('en-IN')}</p>
+            </div>
+          </div>
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b bg-gray-100">
+                <th className="p-2 border">Flat</th>
+                <th className="p-2 border">Tenant Name</th>
+                <th className="p-2 border">Phone</th>
+                <th className="p-2 border text-right">Total Due</th>
+                <th className="p-2 border text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flats.map(f => {
+                const total = f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0);
+                return (
+                  <tr key={f.flat_no} className="border-b">
+                    <td className="p-2 border font-bold">Flat {f.flat_no}</td>
+                    <td className="p-2 border">{f.tenant_name}</td>
+                    <td className="p-2 border">{f.phone}</td>
+                    <td className="p-2 border text-right font-semibold">₹{total.toLocaleString('en-IN')}</td>
+                    <td className="p-2 border text-center font-bold">{f.status}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
         {/* QR Code Modal */}
         {qrFlat && (() => {
           const electricity = qrFlat.electricity_bill || 0;
@@ -481,6 +520,24 @@ export default function RentalDashboard() {
             </div>
           </div>
         )}
+
+        {/* Global Print Styling CSS */}
+        <style jsx global>{`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .print\\:block, .print\\:block * {
+              visibility: visible;
+            }
+            .print\\:block {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+          }
+        `}</style>
       </div>
     </main>
   );
