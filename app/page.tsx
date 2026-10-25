@@ -88,6 +88,42 @@ export default function RentalDashboard() {
     }
   };
 
+  // Monthly Reset Function
+  const handleMonthlyReset = async () => {
+    if (!confirm('Are you sure you want to reset all flats to UNPAID for the new month?')) return;
+    
+    const { error } = await supabase
+      .from('flats')
+      .update({ status: 'UNPAID', paid_amount: 0 })
+      .neq('flat_no', ''); // updates all rows
+
+    if (error) {
+      alert('Failed to perform monthly reset.');
+      console.error(error);
+    } else {
+      fetchFlats();
+      alert('All flats have been reset to UNPAID successfully!');
+    }
+  };
+
+  // Export CSV Function
+  const exportToCSV = () => {
+    const headers = ['Flat No', 'Tenant Name', 'Phone', 'Rent', 'Electricity', 'Water', 'Maintenance', 'Total Due', 'Status'];
+    const rows = flats.map(f => {
+      const total = f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0);
+      return [f.flat_no, `"${f.tenant_name}"`, f.phone, f.rent, f.electricity_bill || 0, f.water_bill || 0, f.maintenance || 0, total, f.status];
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Rental_Report_${new Date().toISOString().slice(0, 7)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
   const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
 
@@ -112,7 +148,7 @@ export default function RentalDashboard() {
             <h1 className="text-2xl font-bold text-gray-900">Rental Management Dashboard</h1>
             <p className="text-sm text-gray-500">20 Residential Flats - Full Itemized Payment System</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3 items-center">
             <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">
               <p className="text-xs text-emerald-600 font-medium">Collected</p>
               <p className="text-lg font-bold text-emerald-700">₹{totalCollected.toLocaleString('en-IN')}</p>
@@ -121,12 +157,28 @@ export default function RentalDashboard() {
               <p className="text-xs text-amber-600 font-medium">Pending</p>
               <p className="text-lg font-bold text-amber-700">₹{totalPending.toLocaleString('en-IN')}</p>
             </div>
-            <button 
-              onClick={fetchFlats}
-              className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl text-sm font-medium text-gray-700 transition"
-            >
-              🔄 Refresh
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={exportToCSV}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2.5 rounded-xl text-xs font-semibold transition border border-blue-200"
+                title="Download CSV Report"
+              >
+                📊 Export CSV
+              </button>
+              <button 
+                onClick={handleMonthlyReset}
+                className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2.5 rounded-xl text-xs font-semibold transition border border-rose-200"
+                title="Reset for New Month"
+              >
+                🔄 Monthly Reset
+              </button>
+              <button 
+                onClick={fetchFlats}
+                className="bg-gray-100 hover:bg-gray-200 px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-700 transition"
+              >
+                🔄 Refresh
+              </button>
+            </div>
           </div>
         </div>
 
@@ -186,18 +238,24 @@ export default function RentalDashboard() {
 
               const upiString = `upi://pay?pa=${DAD_UPI_ID}&pn=Property%20Owner&am=${totalDue}&cu=INR&tn=Rent%20for%20Flat%20${flat.flat_no}&amMode=0`;
               
+              // Dynamic WhatsApp Message: Bill Reminder if Unpaid, Receipt if Paid
               const whatsappMessage = encodeURIComponent(
-                `Hello ${flat.tenant_name},\n\n` +
-                `Here is your itemized rent bill breakdown for Flat ${flat.flat_no}:\n` +
-                `• Base Rent: ₹${flat.rent.toLocaleString('en-IN')}\n` +
-                `• Electricity: ₹${electricity.toLocaleString('en-IN')}\n` +
-                `• Water Bill: ₹${water.toLocaleString('en-IN')}\n` +
-                `• Maintenance: ₹${maintenance.toLocaleString('en-IN')}\n` +
-                `-----------------------------\n` +
-                `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
-                `Pay directly via GPay / PhonePe / Paytm using this locked UPI link:\n` +
-                `${upiString}\n\n` +
-                `Thank you!`
+                flat.status === 'PAID'
+                  ? `Hello ${flat.tenant_name},\n\n` +
+                    `✅ *PAYMENT RECEIPT - Flat ${flat.flat_no}*\n` +
+                    `We have successfully received your full payment of ₹${totalDue.toLocaleString('en-IN')} for this month.\n\n` +
+                    `Thank you!`
+                  : `Hello ${flat.tenant_name},\n\n` +
+                    `Here is your itemized rent bill breakdown for Flat ${flat.flat_no}:\n` +
+                    `• Base Rent: ₹${flat.rent.toLocaleString('en-IN')}\n` +
+                    `• Electricity: ₹${electricity.toLocaleString('en-IN')}\n` +
+                    `• Water Bill: ₹${water.toLocaleString('en-IN')}\n` +
+                    `• Maintenance: ₹${maintenance.toLocaleString('en-IN')}\n` +
+                    `-----------------------------\n` +
+                    `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
+                    `Pay directly via GPay / PhonePe / Paytm using this locked UPI link:\n` +
+                    `${upiString}\n\n` +
+                    `Thank you!`
               );
 
               const whatsappUrl = `https://wa.me/${flat.phone}?text=${whatsappMessage}`;
@@ -245,9 +303,11 @@ export default function RentalDashboard() {
                         href={whatsappUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-2 rounded-xl text-xs font-medium text-center transition flex items-center justify-center gap-1"
+                        className={`flex-1 py-2 px-2 rounded-xl text-xs font-medium text-center transition flex items-center justify-center gap-1 text-white ${
+                          flat.status === 'PAID' ? 'bg-teal-600 hover:bg-teal-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                        }`}
                       >
-                        💬 WhatsApp
+                        {flat.status === 'PAID' ? '💬 Receipt' : '💬 WhatsApp'}
                       </a>
                       <button
                         onClick={() => setQrFlat(flat)}
@@ -409,7 +469,7 @@ export default function RentalDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 name-field mb-1">Payment Status</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Status</label>
                   <select
                     value={editingFlat.status}
                     onChange={(e) => setEditingFlat({ ...editingFlat, status: e.target.value as 'PAID' | 'UNPAID' })}
