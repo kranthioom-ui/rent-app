@@ -63,7 +63,7 @@ export default function RentalDashboard() {
     if (!editingFlat) return;
     setSaving(true);
 
-    const totalDue = Number(editingFlat.rent) + Number(editingFlat.electricity_bill || 0) + Number(editingFlat.water_bill || 0) + Number(editingFlat.maintenance || 0);
+    const totalDue = Number(editingFlat.rent || 0) + Number(editingFlat.electricity_bill || 0) + Number(editingFlat.water_bill || 0) + Number(editingFlat.maintenance || 0);
     const paid_amount = editingFlat.status === 'PAID' ? totalDue : 0;
 
     const { error } = await supabase
@@ -71,7 +71,7 @@ export default function RentalDashboard() {
       .update({
         tenant_name: editingFlat.tenant_name,
         phone: editingFlat.phone,
-        rent: Number(editingFlat.rent),
+        rent: Number(editingFlat.rent || 0),
         electricity_bill: Number(editingFlat.electricity_bill || 0),
         water_bill: Number(editingFlat.water_bill || 0),
         maintenance: Number(editingFlat.maintenance || 0),
@@ -480,9 +480,10 @@ export default function RentalDashboard() {
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Base Rent (₹)</label>
                     <input
-                      type="number"
-                      value={editingFlat.rent}
-                      onChange={(e) => setEditingFlat({ ...editingFlat, rent: Number(e.target.value) })}
+                      type="text"
+                      inputMode="numeric"
+                      value={editingFlat.rent ?? ''}
+                      onChange={(e) => setEditingFlat({ ...editingFlat, rent: e.target.value === '' ? 0 : Number(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
@@ -490,9 +491,10 @@ export default function RentalDashboard() {
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Electricity (₹)</label>
                     <input
-                      type="number"
-                      value={editingFlat.electricity_bill}
-                      onChange={(e) => setEditingFlat({ ...editingFlat, electricity_bill: Number(e.target.value) })}
+                      type="text"
+                      inputMode="numeric"
+                      value={editingFlat.electricity_bill ?? ''}
+                      onChange={(e) => setEditingFlat({ ...editingFlat, electricity_bill: e.target.value === '' ? 0 : Number(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
@@ -503,9 +505,10 @@ export default function RentalDashboard() {
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Water Bill (₹)</label>
                     <input
-                      type="number"
-                      value={editingFlat.water_bill}
-                      onChange={(e) => setEditingFlat({ ...editingFlat, water_bill: Number(e.target.value) })}
+                      type="text"
+                      inputMode="numeric"
+                      value={editingFlat.water_bill ?? ''}
+                      onChange={(e) => setEditingFlat({ ...editingFlat, water_bill: e.target.value === '' ? 0 : Number(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
@@ -513,9 +516,10 @@ export default function RentalDashboard() {
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Maintenance (₹)</label>
                     <input
-                      type="number"
-                      value={editingFlat.maintenance}
-                      onChange={(e) => setEditingFlat({ ...editingFlat, maintenance: Number(e.target.value) })}
+                      type="text"
+                      inputMode="numeric"
+                      value={editingFlat.maintenance ?? ''}
+                      onChange={(e) => setEditingFlat({ ...editingFlat, maintenance: e.target.value === '' ? 0 : Number(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
