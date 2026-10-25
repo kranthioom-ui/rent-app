@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -108,55 +107,52 @@ export default function RentalDashboard() {
     }
   };
 
-  // Generate Professional PDF Report
+  // Generate Clean PDF Report
   const exportToPDF = () => {
     const doc = new jsPDF();
     const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
     // Header Title
     doc.setFontSize(18);
-    doc.setTextColor(33, 37, 41);
+    doc.setTextColor(15, 23, 42);
     doc.text('Monthly Rental Financial Report', 14, 20);
 
-    doc.setFontSize(11, 'normal');
-    doc.setTextColor(108, 117, 125);
+    doc.setFontSize(11);
+    doc.setTextColor(100, 116, 139);
     doc.text(`Generated for: ${currentMonth}`, 14, 28);
 
-    // Summary Totals
     const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
     const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
 
     doc.setFontSize(10);
     doc.text(`Total Collected: Rs. ${totalCollected.toLocaleString('en-IN')}`, 14, 36);
-    doc.text(`Total Pending: Rs. ${totalPending.toLocaleString('en-IN')}`, 80, 36);
+    doc.text(`Total Pending: Rs. ${totalPending.toLocaleString('en-IN')}`, 90, 36);
 
-    // Table Data Mapping
-    const tableColumn = ['Flat', 'Tenant Name', 'Rent', 'Elec', 'Water', 'Maint', 'Total Due', 'Status'];
-    const tableRows = flats.map(f => {
+    let y = 48;
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Flat', 14, y);
+    doc.text('Tenant', 35, y);
+    doc.text('Total Due', 120, y);
+    doc.text('Status', 165, y);
+    
+    doc.setLineWidth(0.5);
+    doc.line(14, y + 2, 196, y + 2);
+    y += 10;
+
+    flats.forEach((f) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
       const total = f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0);
-      return [
-        f.flat_no,
-        f.tenant_name,
-        `Rs. ${f.rent}`,
-        `Rs. ${f.electricity_bill || 0}`,
-        `Rs. ${f.water_bill || 0}`,
-        `Rs. ${f.maintenance || 0}`,
-        `Rs. ${total}`,
-        f.status
-      ];
+      doc.text(String(f.flat_no), 14, y);
+      doc.text(String(f.tenant_name), 35, y);
+      doc.text(`Rs. ${total.toLocaleString('en-IN')}`, 120, y);
+      doc.text(String(f.status), 165, y);
+      y += 8;
     });
 
-    // Generate Table
-    (doc as any).autoTable({
-      startY: 42,
-      head: [tableColumn],
-      body: tableRows,
-      theme: 'grid',
-      headStyles: { fillColor: [15, 23, 42] },
-      styles: { fontSize: 9, cellPadding: 3 },
-    });
-
-    // Save PDF
     doc.save(`Rental_Report_${new Date().toISOString().slice(0, 7)}.pdf`);
   };
 
