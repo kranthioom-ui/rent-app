@@ -245,7 +245,7 @@ export default function RentalDashboard() {
               placeholder="🔍 Search flat no or tenant name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-gray-50"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-gray-50"
             />
           </div>
           <div className="flex gap-1.5 w-full sm:w-auto">
@@ -460,7 +460,7 @@ export default function RentalDashboard() {
                     type="text"
                     value={editingFlat.tenant_name}
                     onChange={(e) => setEditingFlat({ ...editingFlat, tenant_name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     required
                   />
                 </div>
@@ -471,7 +471,7 @@ export default function RentalDashboard() {
                     type="text"
                     value={editingFlat.phone}
                     onChange={(e) => setEditingFlat({ ...editingFlat, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     required
                   />
                 </div>
@@ -483,7 +483,7 @@ export default function RentalDashboard() {
                       type="number"
                       value={editingFlat.rent}
                       onChange={(e) => setEditingFlat({ ...editingFlat, rent: Number(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
                   </div>
@@ -493,7 +493,7 @@ export default function RentalDashboard() {
                       type="number"
                       value={editingFlat.electricity_bill}
                       onChange={(e) => setEditingFlat({ ...editingFlat, electricity_bill: Number(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
                   </div>
@@ -506,7 +506,7 @@ export default function RentalDashboard() {
                       type="number"
                       value={editingFlat.water_bill}
                       onChange={(e) => setEditingFlat({ ...editingFlat, water_bill: Number(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
                   </div>
@@ -516,7 +516,7 @@ export default function RentalDashboard() {
                       type="number"
                       value={editingFlat.maintenance}
                       onChange={(e) => setEditingFlat({ ...editingFlat, maintenance: Number(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
                     />
                   </div>
@@ -527,7 +527,7 @@ export default function RentalDashboard() {
                   <select
                     value={editingFlat.status}
                     onChange={(e) => setEditingFlat({ ...editingFlat, status: e.target.value as 'PAID' | 'UNPAID' })}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="UNPAID">UNPAID</option>
                     <option value="PAID">PAID</option>
