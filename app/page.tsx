@@ -28,6 +28,7 @@ export default function RentalDashboard() {
   const [editingFlat, setEditingFlat] = useState<Flat | null>(null);
   const [qrFlat, setQrFlat] = useState<Flat | null>(null);
   const [saving, setSaving] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState('');
   
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +44,7 @@ export default function RentalDashboard() {
 
   useEffect(() => {
     fetchFlats();
+    setCurrentMonth(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
   }, []);
 
   const updateStatus = async (flat_no: string, status: 'PAID' | 'UNPAID', totalAmount: number) => {
@@ -325,7 +327,7 @@ export default function RentalDashboard() {
           <div className="border-b pb-4 flex justify-between items-center">
             <div>
               <h1 className="text-xl font-bold">Rental Management Summary Report</h1>
-              <p className="text-xs text-gray-500">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+              <p className="text-xs text-gray-500">{currentMonth}</p>
             </div>
             <div className="text-right text-xs">
               <p><strong>Collected:</strong> ₹{totalCollected.toLocaleString('en-IN')}</p>
