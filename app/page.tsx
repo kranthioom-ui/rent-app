@@ -15,16 +15,16 @@ interface Flat {
   tenant_name: string;
   phone: string;
   rent: number;
-  electricity_bill: number;
   water_bill: number;
-  maintenance: number;
-  status: 'PAID' | 'UNPAID' | 'PARTIAL';
+  status: 'PAID' | 'UNPAID';
   paid_amount: number;
 }
 
 export default function RentalDashboard() {
   const [flats, setFlats] = useState<Flat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingFlat, setEditingFlat] = useState<Flat | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const fetchFlats = async () => {
     setLoading(true);
@@ -38,8 +38,8 @@ export default function RentalDashboard() {
     fetchFlats();
   }, []);
 
-  const updateStatus = async (flat_no: string, status: 'PAID' | 'UNPAID' | 'PARTIAL', totalAmount: number) => {
-    const paid_amount = status === 'PAID' ? totalAmount : status === 'PARTIAL' ? totalAmount / 2 : 0;
+  const updateStatus = async (flat_no: string, status: 'PAID' | 'UNPAID', totalAmount: number) => {
+    const paid_amount = status === 'PAID' ? totalAmount : 0;
     const { error } = await supabase
       .from('flats')
       .update({ status, paid_amount })
@@ -49,11 +49,38 @@ export default function RentalDashboard() {
     else fetchFlats();
   };
 
-  const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
-  const totalPending = flats.filter(f => f.status !== 'PAID').reduce((acc, f) => {
-    const total = (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0));
-    return acc + (total - (f.paid_amount || 0));
-  }, 0);
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFlat) return;
+    setSaving(true);
+
+    const totalDue = Number(editingFlat.rent) + Number(editingFlat.water_bill || 0);
+    const paid_amount = editingFlat.status === 'PAID' ? totalDue : 0;
+
+    const { error } = await supabase
+      .from('flats')
+      .update({
+        tenant_name: editingFlat.tenant_name,
+        phone: editingFlat.phone,
+        rent: Number(editingFlat.rent),
+        water_bill: Number(editingFlat.water_bill),
+        status: editingFlat.status,
+        paid_amount: paid_amount
+      })
+      .eq('flat_no', editingFlat.flat_no);
+
+    setSaving(false);
+    if (error) {
+      alert('Failed to update tenant details.');
+      console.error(error);
+    } else {
+      setEditingFlat(null);
+      fetchFlats();
+    }
+  };
+
+  const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.water_bill || 0)), 0);
+  const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.water_bill || 0)), 0);
 
   return (
     <main className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -62,7 +89,7 @@ export default function RentalDashboard() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Rental Management Dashboard</h1>
-            <p className="text-sm text-gray-500">20 Residential Flats - India Portal</p>
+            <p className="text-sm text-gray-500">20 Residential Flats - Enforced Full Payment System</p>
           </div>
           <div className="flex gap-4">
             <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">
@@ -88,18 +115,14 @@ export default function RentalDashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {flats.map((flat) => {
-              const electricity = flat.electricity_bill || 0;
               const water = flat.water_bill || 0;
-              const maintenance = flat.maintenance || 0;
-              const totalDue = flat.rent + electricity + water + maintenance;
+              const totalDue = flat.rent + water;
 
               const whatsappMessage = encodeURIComponent(
                 `Hello ${flat.tenant_name},\n\n` +
-                `Here is your itemized rent bill breakdown for Flat ${flat.flat_no}:\n` +
+                `Here is your rent bill breakdown for Flat ${flat.flat_no}:\n` +
                 `• Base Rent: ₹${flat.rent.toLocaleString('en-IN')}\n` +
-                `• Electricity Bill: ₹${electricity.toLocaleString('en-IN')}\n` +
                 `• Water Bill: ₹${water.toLocaleString('en-IN')}\n` +
-                `• Maintenance: ₹${maintenance.toLocaleString('en-IN')}\n` +
                 `-----------------------------\n` +
                 `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
                 `Pay directly via GPay / PhonePe / Paytm using this locked UPI link:\n` +
@@ -118,20 +141,25 @@ export default function RentalDashboard() {
                         <h3 className="text-lg font-semibold text-gray-800">{flat.tenant_name}</h3>
                         <p className="text-xs text-gray-500">{flat.phone}</p>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        flat.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' :
-                        flat.status === 'PARTIAL' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {flat.status}
-                      </span>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          flat.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {flat.status}
+                        </span>
+                        <button
+                          onClick={() => setEditingFlat(flat)}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
+                        >
+                          ✏️ Edit
+                        </button>
+                      </div>
                     </div>
 
                     {/* Bill Breakdown */}
                     <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1 mb-4 text-gray-600">
                       <div className="flex justify-between"><span>Base Rent:</span> <span>₹{flat.rent.toLocaleString('en-IN')}</span></div>
-                      <div className="flex justify-between"><span>Electricity:</span> <span>₹{electricity.toLocaleString('en-IN')}</span></div>
-                      <div className="flex justify-between"><span>Water:</span> <span>₹{water.toLocaleString('en-IN')}</span></div>
-                      <div className="flex justify-between"><span>Maintenance:</span> <span>₹{maintenance.toLocaleString('en-IN')}</span></div>
+                      <div className="flex justify-between"><span>Water Bill:</span> <span>₹{water.toLocaleString('en-IN')}</span></div>
                       <div className="border-t border-gray-200 pt-1 mt-1 flex justify-between font-bold text-gray-900">
                         <span>Total Due:</span> <span>₹{totalDue.toLocaleString('en-IN')}</span>
                       </div>
@@ -167,6 +195,99 @@ export default function RentalDashboard() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Edit Tenant Modal */}
+        {editingFlat && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-gray-100 space-y-4">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h3 className="text-lg font-bold text-gray-900">Edit Flat {editingFlat.flat_no}</h3>
+                <button 
+                  onClick={() => setEditingFlat(null)}
+                  className="text-gray-400 hover:text-gray-600 text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEdit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Tenant Name</label>
+                  <input
+                    type="text"
+                    value={editingFlat.tenant_name}
+                    onChange={(e) => setEditingFlat({ ...editingFlat, tenant_name: e.target.value })}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Phone Number (with Country Code)</label>
+                  <input
+                    type="text"
+                    value={editingFlat.phone}
+                    onChange={(e) => setEditingFlat({ ...editingFlat, phone: e.target.value })}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Base Rent (₹)</label>
+                    <input
+                      type="number"
+                      value={editingFlat.rent}
+                      onChange={(e) => setEditingFlat({ ...editingFlat, rent: Number(e.target.value) })}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Water Bill (₹)</label>
+                    <input
+                      type="number"
+                      value={editingFlat.water_bill}
+                      onChange={(e) => setEditingFlat({ ...editingFlat, water_bill: Number(e.target.value) })}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Status</label>
+                  <select
+                    value={editingFlat.status}
+                    onChange={(e) => setEditingFlat({ ...editingFlat, status: e.target.value as 'PAID' | 'UNPAID' })}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="UNPAID">UNPAID</option>
+                    <option value="PAID">PAID</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingFlat(null)}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-medium transition disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>
