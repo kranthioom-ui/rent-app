@@ -431,7 +431,7 @@ export default function RentalDashboard() {
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Water Bill (₹)</label>
                     <input
                       type="number"
-                      value={editingFlat.water_bhill || editingFlat.water_bill}
+                      value={editingFlat.water_bill}
                       onChange={(e) => setEditingFlat({ ...editingFlat, water_bill: Number(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
