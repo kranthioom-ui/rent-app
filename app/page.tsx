@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -95,7 +97,7 @@ export default function RentalDashboard() {
     const { error } = await supabase
       .from('flats')
       .update({ status: 'UNPAID', paid_amount: 0 })
-      .neq('flat_no', ''); // updates all rows
+      .neq('flat_no', '');
 
     if (error) {
       alert('Failed to perform monthly reset.');
@@ -106,22 +108,56 @@ export default function RentalDashboard() {
     }
   };
 
-  // Export CSV Function
-  const exportToCSV = () => {
-    const headers = ['Flat No', 'Tenant Name', 'Phone', 'Rent', 'Electricity', 'Water', 'Maintenance', 'Total Due', 'Status'];
-    const rows = flats.map(f => {
+  // Generate Professional PDF Report
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    // Header Title
+    doc.setFontSize(18);
+    doc.setTextColor(33, 37, 41);
+    doc.text('Monthly Rental Financial Report', 14, 20);
+
+    doc.setFontSize(11, 'normal');
+    doc.setTextColor(108, 117, 125);
+    doc.text(`Generated for: ${currentMonth}`, 14, 28);
+
+    // Summary Totals
+    const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
+    const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
+
+    doc.setFontSize(10);
+    doc.text(`Total Collected: Rs. ${totalCollected.toLocaleString('en-IN')}`, 14, 36);
+    doc.text(`Total Pending: Rs. ${totalPending.toLocaleString('en-IN')}`, 80, 36);
+
+    // Table Data Mapping
+    const tableColumn = ['Flat', 'Tenant Name', 'Rent', 'Elec', 'Water', 'Maint', 'Total Due', 'Status'];
+    const tableRows = flats.map(f => {
       const total = f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0);
-      return [f.flat_no, `"${f.tenant_name}"`, f.phone, f.rent, f.electricity_bill || 0, f.water_bill || 0, f.maintenance || 0, total, f.status];
+      return [
+        f.flat_no,
+        f.tenant_name,
+        `Rs. ${f.rent}`,
+        `Rs. ${f.electricity_bill || 0}`,
+        `Rs. ${f.water_bill || 0}`,
+        `Rs. ${f.maintenance || 0}`,
+        `Rs. ${total}`,
+        f.status
+      ];
     });
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Rental_Report_${new Date().toISOString().slice(0, 7)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Generate Table
+    (doc as any).autoTable({
+      startY: 42,
+      head: [tableColumn],
+      body: tableRows,
+      theme: 'grid',
+      headStyles: { fillColor: [15, 23, 42] },
+      styles: { fontSize: 9, cellPadding: 3 },
+    });
+
+    // Save PDF
+    doc.save(`Rental_Report_${new Date().toISOString().slice(0, 7)}.pdf`);
   };
 
   const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
@@ -159,11 +195,11 @@ export default function RentalDashboard() {
             </div>
             <div className="flex gap-2">
               <button 
-                onClick={exportToCSV}
+                onClick={exportToPDF}
                 className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2.5 rounded-xl text-xs font-semibold transition border border-blue-200"
-                title="Download CSV Report"
+                title="Download PDF Financial Report"
               >
-                📊 Export CSV
+                📥 Export PDF
               </button>
               <button 
                 onClick={handleMonthlyReset}
@@ -238,7 +274,6 @@ export default function RentalDashboard() {
 
               const upiString = `upi://pay?pa=${DAD_UPI_ID}&pn=Property%20Owner&am=${totalDue}&cu=INR&tn=Rent%20for%20Flat%20${flat.flat_no}&amMode=0`;
               
-              // Dynamic WhatsApp Message: Bill Reminder if Unpaid, Receipt if Paid
               const whatsappMessage = encodeURIComponent(
                 flat.status === 'PAID'
                   ? `Hello ${flat.tenant_name},\n\n` +
