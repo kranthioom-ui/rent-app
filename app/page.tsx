@@ -7,7 +7,6 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Replace with your dad's actual UPI ID
 const DAD_UPI_ID = "your-upi-id@upi"; 
 
 interface Flat {
@@ -30,7 +29,6 @@ export default function RentalDashboard() {
   const [saving, setSaving] = useState(false);
   const [currentMonth, setCurrentMonth] = useState('');
   
-  // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'UNPAID'>('ALL');
 
@@ -38,7 +36,21 @@ export default function RentalDashboard() {
     setLoading(true);
     const { data, error } = await supabase.from('flats').select('*').order('flat_no', { ascending: true });
     if (error) console.error('Error fetching flats:', error);
-    else setFlats(data || []);
+    else {
+      // Map database columns safely (handling alternative column names if any)
+      const mapped = (data || []).map((item: any) => ({
+        flat_no: item.flat_no || item.flat_number || '',
+        tenant_name: item.tenant_name || '',
+        phone: item.phone || '',
+        rent: Number(item.rent) || 0,
+        electricity_bill: Number(item.electricity_bill ?? item.electricity) || 0,
+        water_bill: Number(item.water_bill ?? item.water) || 0,
+        maintenance: Number(item.maintenance) || 0,
+        status: item.status || 'UNPAID',
+        paid_amount: Number(item.paid_amount) || 0,
+      }));
+      setFlats(mapped);
+    }
     setLoading(false);
   };
 
@@ -71,7 +83,7 @@ export default function RentalDashboard() {
     const totalDue = rent + electricity + water + maintenance;
     const paid_amount = editingFlat.status === 'PAID' ? totalDue : 0;
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('flats')
       .update({
         tenant_name: editingFlat.tenant_name,
@@ -83,8 +95,7 @@ export default function RentalDashboard() {
         status: editingFlat.status,
         paid_amount: paid_amount
       })
-      .eq('flat_no', editingFlat.flat_no)
-      .select();
+      .eq('flat_no', editingFlat.flat_no);
 
     setSaving(false);
     if (error) {
@@ -96,7 +107,6 @@ export default function RentalDashboard() {
     }
   };
 
-  // Monthly Reset Function
   const handleMonthlyReset = async () => {
     if (!confirm('Are you sure you want to reset all flats to UNPAID for the new month?')) return;
     
@@ -117,7 +127,6 @@ export default function RentalDashboard() {
   const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
   const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
 
-  // Reliable Hidden Frame Print-to-PDF Handler
   const handleExportPDF = () => {
     const rowsHTML = flats.map(f => {
       const total = f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0);
@@ -188,7 +197,6 @@ export default function RentalDashboard() {
     }, 500);
   };
 
-  // Filtered Flats Logic
   const filteredFlats = flats.filter((flat) => {
     const matchesSearch = 
       flat.flat_no.toLowerCase().includes(searchQuery.toLowerCase()) || 
