@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import jsPDF from 'jspdf';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -107,55 +106,6 @@ export default function RentalDashboard() {
     }
   };
 
-  // Generate Clean PDF Report
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-
-    // Header Title
-    doc.setFontSize(18);
-    doc.setTextColor(15, 23, 42);
-    doc.text('Monthly Rental Financial Report', 14, 20);
-
-    doc.setFontSize(11);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`Generated for: ${currentMonth}`, 14, 28);
-
-    const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
-    const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
-
-    doc.setFontSize(10);
-    doc.text(`Total Collected: Rs. ${totalCollected.toLocaleString('en-IN')}`, 14, 36);
-    doc.text(`Total Pending: Rs. ${totalPending.toLocaleString('en-IN')}`, 90, 36);
-
-    let y = 48;
-    doc.setFontSize(10);
-    doc.setTextColor(15, 23, 42);
-    doc.text('Flat', 14, y);
-    doc.text('Tenant', 35, y);
-    doc.text('Total Due', 120, y);
-    doc.text('Status', 165, y);
-    
-    doc.setLineWidth(0.5);
-    doc.line(14, y + 2, 196, y + 2);
-    y += 10;
-
-    flats.forEach((f) => {
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-      const total = f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0);
-      doc.text(String(f.flat_no), 14, y);
-      doc.text(String(f.tenant_name), 35, y);
-      doc.text(`Rs. ${total.toLocaleString('en-IN')}`, 120, y);
-      doc.text(String(f.status), 165, y);
-      y += 8;
-    });
-
-    doc.save(`Rental_Report_${new Date().toISOString().slice(0, 7)}.pdf`);
-  };
-
   const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
   const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
 
@@ -191,9 +141,9 @@ export default function RentalDashboard() {
             </div>
             <div className="flex gap-2">
               <button 
-                onClick={exportToPDF}
+                onClick={() => window.print()}
                 className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2.5 rounded-xl text-xs font-semibold transition border border-blue-200"
-                title="Download PDF Financial Report"
+                title="Print or Save as PDF"
               >
                 📥 Export PDF
               </button>
@@ -481,7 +431,7 @@ export default function RentalDashboard() {
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Water Bill (₹)</label>
                     <input
                       type="number"
-                      value={editingFlat.water_bill}
+                      value={editingFlat.water_bhill || editingFlat.water_bill}
                       onChange={(e) => setEditingFlat({ ...editingFlat, water_bill: Number(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       required
