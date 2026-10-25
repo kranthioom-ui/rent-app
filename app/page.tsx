@@ -111,6 +111,77 @@ export default function RentalDashboard() {
   const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
   const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0)), 0);
 
+  // Reliable Hidden Frame Print-to-PDF Handler
+  const handleExportPDF = () => {
+    const rowsHTML = flats.map(f => {
+      const total = f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0);
+      return `
+        <tr>
+          <td style="padding: 6px 8px; border: 1px solid #ddd; font-weight: bold;">Flat ${f.flat_no}</td>
+          <td style="padding: 6px 8px; border: 1px solid #ddd;">${f.tenant_name}</td>
+          <td style="padding: 6px 8px; border: 1px solid #ddd;">${f.phone}</td>
+          <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">₹${total.toLocaleString('en-IN')}</td>
+          <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: ${f.status === 'PAID' ? 'green' : 'orange'};">${f.status}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(`
+      <html>
+        <head>
+          <title>Rental Summary Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 15px; color: #333; }
+            h1 { font-size: 18px; margin-bottom: 2px; }
+            p { font-size: 11px; color: #666; margin-top: 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
+            th { background-color: #f3f4f6; padding: 8px; border: 1px solid #ddd; text-align: left; }
+            .summary { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+          </style>
+        </head>
+        <body>
+          <div>
+            <h1>Rental Management Summary Report</h1>
+            <p>Generated for: ${currentMonth}</p>
+          </div>
+          <div class="summary">
+            <div><strong>Total Collected:</strong> ₹${totalCollected.toLocaleString('en-IN')}</div>
+            <div><strong>Total Pending:</strong> ₹${totalPending.toLocaleString('en-IN')}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Flat</th>
+                <th>Tenant Name</th>
+                <th>Phone</th>
+                <th style="text-align: right;">Total Due</th>
+                <th style="text-align: center;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHTML}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      document.body.removeChild(iframe);
+    }, 500);
+  };
+
   // Filtered Flats Logic
   const filteredFlats = flats.filter((flat) => {
     const matchesSearch = 
@@ -143,7 +214,7 @@ export default function RentalDashboard() {
             </div>
             <div className="flex gap-2">
               <button 
-                onClick={() => window.print()}
+                onClick={handleExportPDF}
                 className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2.5 rounded-xl text-xs font-semibold transition border border-blue-200"
                 title="Print or Save as PDF"
               >
@@ -322,45 +393,6 @@ export default function RentalDashboard() {
           </div>
         )}
 
-        {/* Hidden Compact Print Report Layout for PDF */}
-        <div className="hidden print:block bg-white p-6 space-y-4">
-          <div className="border-b pb-4 flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-bold">Rental Management Summary Report</h1>
-              <p className="text-xs text-gray-500">{currentMonth}</p>
-            </div>
-            <div className="text-right text-xs">
-              <p><strong>Collected:</strong> ₹{totalCollected.toLocaleString('en-IN')}</p>
-              <p><strong>Pending:</strong> ₹{totalPending.toLocaleString('en-IN')}</p>
-            </div>
-          </div>
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b bg-gray-100">
-                <th className="p-2 border">Flat</th>
-                <th className="p-2 border">Tenant Name</th>
-                <th className="p-2 border">Phone</th>
-                <th className="p-2 border text-right">Total Due</th>
-                <th className="p-2 border text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {flats.map(f => {
-                const total = f.rent + (f.electricity_bill || 0) + (f.water_bill || 0) + (f.maintenance || 0);
-                return (
-                  <tr key={f.flat_no} className="border-b">
-                    <td className="p-2 border font-bold">Flat {f.flat_no}</td>
-                    <td className="p-2 border">{f.tenant_name}</td>
-                    <td className="p-2 border">{f.phone}</td>
-                    <td className="p-2 border text-right font-semibold">₹{total.toLocaleString('en-IN')}</td>
-                    <td className="p-2 border text-center font-bold">{f.status}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
         {/* QR Code Modal */}
         {qrFlat && (() => {
           const electricity = qrFlat.electricity_bill || 0;
@@ -522,24 +554,6 @@ export default function RentalDashboard() {
             </div>
           </div>
         )}
-
-        {/* Global Print Styling CSS */}
-        <style jsx global>{`
-          @media print {
-            body * {
-              visibility: hidden;
-            }
-            .print\\:block, .print\\:block * {
-              visibility: visible;
-            }
-            .print\\:block {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-            }
-          }
-        `}</style>
       </div>
     </main>
   );
