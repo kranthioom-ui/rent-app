@@ -26,6 +26,7 @@ export default function RentalDashboard() {
   const [flats, setFlats] = useState<Flat[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingFlat, setEditingFlat] = useState<Flat | null>(null);
+  const [qrFlat, setQrFlat] = useState<Flat | null>(null);
   const [saving, setSaving] = useState(false);
   
   // Search and Filter States
@@ -183,6 +184,8 @@ export default function RentalDashboard() {
               const maintenance = flat.maintenance || 0;
               const totalDue = flat.rent + electricity + water + maintenance;
 
+              const upiString = `upi://pay?pa=${DAD_UPI_ID}&pn=Property%20Owner&am=${totalDue}&cu=INR&tn=Rent%20for%20Flat%20${flat.flat_no}&amMode=0`;
+              
               const whatsappMessage = encodeURIComponent(
                 `Hello ${flat.tenant_name},\n\n` +
                 `Here is your itemized rent bill breakdown for Flat ${flat.flat_no}:\n` +
@@ -193,7 +196,7 @@ export default function RentalDashboard() {
                 `-----------------------------\n` +
                 `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
                 `Pay directly via GPay / PhonePe / Paytm using this locked UPI link:\n` +
-                `upi://pay?pa=${DAD_UPI_ID}&pn=Property%20Owner&am=${totalDue}&cu=INR&tn=Rent%20for%20Flat%20${flat.flat_no}&amMode=0\n\n` +
+                `${upiString}\n\n` +
                 `Thank you!`
               );
 
@@ -236,28 +239,37 @@ export default function RentalDashboard() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 pt-2 border-t border-gray-100">
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-xl text-xs font-medium text-center transition flex items-center justify-center gap-1.5"
-                    >
-                      💬 WhatsApp Bill
-                    </a>
+                  <div className="space-y-2 pt-2 border-t border-gray-100">
+                    <div className="flex gap-2">
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-2 rounded-xl text-xs font-medium text-center transition flex items-center justify-center gap-1"
+                      >
+                        💬 WhatsApp
+                      </a>
+                      <button
+                        onClick={() => setQrFlat(flat)}
+                        className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-2 px-2 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1"
+                      >
+                        📷 Show QR
+                      </button>
+                    </div>
+
                     {flat.status !== 'PAID' ? (
                       <button
                         onClick={() => updateStatus(flat.flat_no, 'PAID', totalDue)}
-                        className="flex-1 bg-gray-900 hover:bg-gray-800 text-white py-2 px-3 rounded-xl text-xs font-medium transition"
+                        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2 px-3 rounded-xl text-xs font-medium transition"
                       >
                         Mark Paid
                       </button>
                     ) : (
                       <button
                         onClick={() => updateStatus(flat.flat_no, 'UNPAID', totalDue)}
-                        className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded-xl text-xs font-medium transition"
+                        className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded-xl text-xs font-medium transition"
                       >
-                        Reset
+                        Reset Status
                       </button>
                     )}
                   </div>
@@ -266,6 +278,52 @@ export default function RentalDashboard() {
             })}
           </div>
         )}
+
+        {/* QR Code Modal */}
+        {qrFlat && (() => {
+          const electricity = qrFlat.electricity_bill || 0;
+          const water = qrFlat.water_bill || 0;
+          const maintenance = qrFlat.maintenance || 0;
+          const totalDue = qrFlat.rent + electricity + water + maintenance;
+          const upiString = `upi://pay?pa=${DAD_UPI_ID}&pn=Property%20Owner&am=${totalDue}&cu=INR&tn=Rent%20for%20Flat%20${qrFlat.flat_no}&amMode=0`;
+          const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiString)}`;
+
+          return (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-gray-100 text-center space-y-4">
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                  <h3 className="text-base font-bold text-gray-900">Scan to Pay - Flat {qrFlat.flat_no}</h3>
+                  <button 
+                    onClick={() => setQrFlat(null)}
+                    className="text-gray-400 hover:text-gray-600 text-lg font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Tenant: <span className="font-semibold text-gray-800">{qrFlat.tenant_name}</span></p>
+                  <p className="text-lg font-extrabold text-gray-900">₹{totalDue.toLocaleString('en-IN')}</p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 inline-block">
+                  <img src={qrImageUrl} alt="UPI QR Code" className="w-48 h-48 mx-auto rounded-lg" />
+                </div>
+
+                <p className="text-[11px] text-gray-400">
+                  Scan using GPay, PhonePe, or Paytm. Amount is locked automatically.
+                </p>
+
+                <button
+                  onClick={() => setQrFlat(null)}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2.5 rounded-xl text-xs font-semibold transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Edit Tenant Modal */}
         {editingFlat && (
@@ -351,7 +409,7 @@ export default function RentalDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Status</label>
+                  <label className="block text-xs font-semibold text-gray-600 name-field mb-1">Payment Status</label>
                   <select
                     value={editingFlat.status}
                     onChange={(e) => setEditingFlat({ ...editingFlat, status: e.target.value as 'PAID' | 'UNPAID' })}
