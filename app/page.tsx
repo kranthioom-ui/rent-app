@@ -71,7 +71,7 @@ export default function RentalDashboard() {
     const totalDue = rent + electricity + water + maintenance;
     const paid_amount = editingFlat.status === 'PAID' ? totalDue : 0;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('flats')
       .update({
         tenant_name: editingFlat.tenant_name,
@@ -83,12 +83,13 @@ export default function RentalDashboard() {
         status: editingFlat.status,
         paid_amount: paid_amount
       })
-      .eq('flat_no', editingFlat.flat_no);
+      .eq('flat_no', editingFlat.flat_no)
+      .select();
 
     setSaving(false);
     if (error) {
-      alert('Failed to update tenant details.');
-      console.error(error);
+      alert(`Failed to update tenant details: ${error.message}`);
+      console.error('Supabase Update Error:', error);
     } else {
       setEditingFlat(null);
       fetchFlats();
