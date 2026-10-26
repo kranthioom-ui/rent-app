@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const order = await razorpay.orders.create(options);
     return NextResponse.json(order);
   } catch (error: any) {
-    console.error('Razorpay Link Generation Error:', error);
-    return NextResponse.json({ error: error.error || error.message || 'Unknown error' }, { status: 400 });
+    console.error('Razorpay Link Generation Error:', JSON.stringify(error, null, 2));
+    return NextResponse.json({ error: error.error?.description || error.message || 'Unknown error' }, { status: 400 });
   }
 }
