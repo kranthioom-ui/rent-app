@@ -301,6 +301,8 @@ export default function RentalDashboard() {
               const electricity = flat.electricity || 0;
               const maintenance = flat.maintenance || 0;
               const totalDue = flat.rent + water + electricity + maintenance;
+
+              const paymentLink = `https://rent-app-mauve.vercel.app`;
               
               const whatsappMessage = encodeURIComponent(
                 flat.status === 'PAID'
@@ -317,7 +319,7 @@ export default function RentalDashboard() {
                     `-----------------------------\n` +
                     `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
                     `Pay securely online here:\n` +
-                    `https://rent-app-mauve.vercel.app\n\n` +
+                    `${paymentLink}\n\n` +
                     `Thank you!`
               );
 
