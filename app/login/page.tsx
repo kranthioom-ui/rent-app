@@ -51,9 +51,14 @@ export default function LoginPage() {
   return (
     <main className="relative min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans selection:bg-indigo-500 selection:text-white overflow-hidden">
       
-      {/* Immersive Architectural Background Glows */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+      {/* Background Image with Dark Overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center z-0 opacity-40 filter brightness-75 scale-105"
+        style={{ backgroundImage: `url('/watermarked_img_2565257298826806974.jpg')` }}
+      ></div>
+
+      {/* Additional Dark Gradient Mask for Maximum Readability */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-950/80 to-slate-900/60 z-0"></div>
 
       {/* Login Card */}
       <div className="relative max-w-md w-full bg-slate-900/80 backdrop-blur-2xl border border-slate-800/80 p-8 rounded-3xl shadow-2xl space-y-8 z-10">
