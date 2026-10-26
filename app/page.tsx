@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation'; // Step A
 import { 
   Building2, 
   Users, 
@@ -23,13 +24,26 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Dashboard() {
+  const router = useRouter(); // Step B
+
   const [flats, setFlats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // Step C: Check if the user has an active session, otherwise redirect to login
+  const checkUserSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.push('/login');
+    } else {
+      fetchFlats();
+    }
+  };
+
+  // Step D: Trigger session check on page load
   useEffect(() => {
-    fetchFlats();
+    checkUserSession();
   }, []);
 
   const fetchFlats = async () => {
