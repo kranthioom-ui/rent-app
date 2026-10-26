@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
@@ -8,7 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export default function PaymentPage() {
+function PaymentContent() {
   const params = useParams();
   const flat_no = params.flat_no;
 
@@ -110,19 +110,15 @@ export default function PaymentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-gray-500 text-sm">Loading bill details...</div>
-      </div>
+      <div className="text-gray-500 text-sm">Loading bill details...</div>
     );
   }
 
   if (!flat) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center max-w-sm w-full">
-          <h2 className="text-lg font-bold text-gray-800 mb-1">Flat Not Found</h2>
-          <p className="text-xs text-gray-500">The requested flat number does not exist.</p>
-        </div>
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center max-w-sm w-full">
+        <h2 className="text-lg font-bold text-gray-800 mb-1">Flat Not Found</h2>
+        <p className="text-xs text-gray-500">The requested flat number does not exist.</p>
       </div>
     );
   }
@@ -133,42 +129,50 @@ export default function PaymentPage() {
   const totalDue = flat.rent + water + electricity + maintenance;
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-sm border border-gray-100 space-y-6">
-        <div className="text-center space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Flat {flat.flat_no} Online Payment</span>
-          <h1 className="text-xl font-extrabold text-gray-900">Monthly Rent Bill</h1>
-          <p className="text-xs text-gray-500">Tenant: <span className="font-semibold text-gray-700">{flat.tenant_name}</span></p>
-        </div>
-
-        {success ? (
-          <div className="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl text-center space-y-2">
-            <div className="text-3xl">✅</div>
-            <h3 className="text-base font-bold text-emerald-800">Payment Successful!</h3>
-            <p className="text-xs text-emerald-600">Your rent for this month has been successfully paid and recorded.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-2 text-gray-600 border border-gray-100">
-              <div className="flex justify-between"><span>Base Rent:</span> <span>₹{flat.rent.toLocaleString('en-IN')}</span></div>
-              <div className="flex justify-between"><span>Water Bill:</span> <span>₹{water.toLocaleString('en-IN')}</span></div>
-              <div className="flex justify-between"><span>Electricity:</span> <span>₹{electricity.toLocaleString('en-IN')}</span></div>
-              <div className="flex justify-between"><span>Maintenance:</span> <span>₹{maintenance.toLocaleString('en-IN')}</span></div>
-              <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900 text-sm">
-                <span>Total Due:</span> <span>₹{totalDue.toLocaleString('en-IN')}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleRazorpayPayment}
-              disabled={paying}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-sm disabled:opacity-50"
-            >
-              {paying ? 'Opening Payment Gateway...' : `Pay ₹{totalDue.toLocaleString('en-IN')} Securely`}
-            </button>
-          </div>
-        )}
+    <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-sm border border-gray-100 space-y-6">
+      <div className="text-center space-y-1">
+        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Flat {flat.flat_no} Online Payment</span>
+        <h1 className="text-xl font-extrabold text-gray-900">Monthly Rent Bill</h1>
+        <p className="text-xs text-gray-500">Tenant: <span className="font-semibold text-gray-700">{flat.tenant_name}</span></p>
       </div>
+
+      {success ? (
+        <div className="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl text-center space-y-2">
+          <div className="text-3xl">✅</div>
+          <h3 className="text-base font-bold text-emerald-800">Payment Successful!</h3>
+          <p className="text-xs text-emerald-600">Your rent for this month has been successfully paid and recorded.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-2 text-gray-600 border border-gray-100">
+            <div className="flex justify-between"><span>Base Rent:</span> <span>₹{flat.rent.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between"><span>Water Bill:</span> <span>₹{water.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between"><span>Electricity:</span> <span>₹{electricity.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between"><span>Maintenance:</span> <span>₹{maintenance.toLocaleString('en-IN')}</span></div>
+            <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900 text-sm">
+              <span>Total Due:</span> <span>₹{totalDue.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleRazorpayPayment}
+            disabled={paying}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-sm disabled:opacity-50"
+          >
+            {paying ? 'Opening Payment Gateway...' : `Pay ₹{totalDue.toLocaleString('en-IN')} Securely`}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Suspense fallback={<div className="text-gray-500 text-sm">Loading...</div>}>
+        <PaymentContent />
+      </Suspense>
     </main>
   );
 }
