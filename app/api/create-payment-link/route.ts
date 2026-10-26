@@ -1,39 +1,29 @@
-
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+  key_id: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 });
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const { flat_no, tenant_name, phone, amount } = await req.json();
+    const { amount, flat_no, tenant_name, phone } = await request.json();
 
-    const paymentLink = await razorpay.paymentLink.create({
-      amount: amount * 100, // Razorpay works in paise
+    const options = {
+      amount: Math.round(amount), // must be in paise (integer)
       currency: 'INR',
-      accept_partial: false,
-      description: `Rent Payment for Flat ${flat_no}`,
-      customer: {
-        name: tenant_name,
-        contact: phone,
-      },
-      notify: {
-        sms: false,
-        whatsapp: false,
-      },
+      receipt: `receipt_flat_${flat_no}_${Date.now()}`,
       notes: {
-        flat_no: flat_no,
+        flat_no: String(flat_no),
+        tenant_name: String(tenant_name || ''),
       },
-      callback_url: 'https://rent-app-mauve.vercel.app',
-      callback_method: 'get',
-    });
+    };
 
-    return NextResponse.json({ url: paymentLink.short_url });
+    const order = await razorpay.orders.create(options);
+    return NextResponse.json(order);
   } catch (error: any) {
     console.error('Razorpay Link Generation Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.error || error.message || 'Unknown error' }, { status: 400 });
   }
 }
