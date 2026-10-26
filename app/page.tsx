@@ -5,8 +5,11 @@ import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+console.log("Supabase URL loaded:", supabaseUrl ? "Yes" : "NO - MISSING ENV VAR");
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function LoginPage() {
@@ -21,27 +24,30 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg('');
 
+    if (!supabaseUrl || !supabaseAnonKey) {
+      setErrorMsg('Supabase environment variables are missing on Vercel!');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Race the login request against a 6-second timeout
-      const loginPromise = supabase.auth.signInWithPassword({
+      console.log("Attempting sign in for:", email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Connection timed out. Please check your network or Supabase keys.')), 6000)
-      );
+      console.log("Supabase response received:", { data, error });
 
-      const res: any = await Promise.race([loginPromise, timeoutPromise]);
-
-      if (res.error) {
-        setErrorMsg(res.error.message);
+      if (error) {
+        setErrorMsg(error.message);
         setLoading(false);
       } else {
         router.push('/');
         router.refresh();
       }
     } catch (err: any) {
+      console.error("Login exception:", err);
       setErrorMsg(err.message || 'An unexpected error occurred.');
       setLoading(false);
     }
