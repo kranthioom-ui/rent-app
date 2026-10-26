@@ -7,564 +7,153 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const DAD_UPI_ID = "your-upi-id@upi"; 
-
-interface Flat {
-  flat_no: string;
-  tenant_name: string;
-  phone: string;
-  rent: number;
-  water_bill: number;
-  electricity: number;
-  maintenance: number;
-  status: 'PAID' | 'UNPAID';
-  paid_amount: number;
-}
-
-export default function RentalDashboard() {
-  const [flats, setFlats] = useState<Flat[]>([]);
+export default function Dashboard() {
+  const [flats, setFlats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingFlat, setEditingFlat] = useState<Flat | null>(null);
-  const [qrFlat, setQrFlat] = useState<Flat | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState('');
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'UNPAID'>('ALL');
+
+  useEffect(() => {
+    fetchFlats();
+  }, []);
 
   const fetchFlats = async () => {
     setLoading(true);
     const { data, error } = await supabase.from('flats').select('*').order('flat_no', { ascending: true });
-    if (error) console.error('Error fetching flats:', error);
-    else {
-      const mapped = (data || []).map((item: any) => ({
-        flat_no: item.flat_no || item.flat_number || '',
-        tenant_name: item.tenant_name || '',
-        phone: item.phone || '',
-        rent: Number(item.rent) || 0,
-        water_bill: Number(item.water_bill) || 0,
-        electricity: Number(item.electricity) || 0,
-        maintenance: Number(item.maintenance) || 0,
-        status: item.status || 'UNPAID',
-        paid_amount: Number(item.paid_amount) || 0,
-      }));
-      setFlats(mapped);
+    if (error) {
+      console.error('Error fetching flats:', error);
+    } else {
+      setFlats(data || []);
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchFlats();
-    setCurrentMonth(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
-  }, []);
-
-  const updateStatus = async (flat_no: string, status: 'PAID' | 'UNPAID', totalAmount: number) => {
-    const paid_amount = status === 'PAID' ? totalAmount : 0;
+  const handleUpdate = async (flat_no: string, field: string, value: any) => {
     const { error } = await supabase
       .from('flats')
-      .update({ status, paid_amount })
+      .update({ [field]: value })
       .eq('flat_no', flat_no);
 
-    if (error) console.error('Error updating status:', error);
-    else fetchFlats();
-  };
-
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingFlat) return;
-    setSaving(true);
-
-    const rent = Number(editingFlat.rent) || 0;
-    const water = Number(editingFlat.water_bill) || 0;
-    const electricity = Number(editingFlat.electricity) || 0;
-    const maintenance = Number(editingFlat.maintenance) || 0;
-
-    const totalDue = rent + water + electricity + maintenance;
-    const paid_amount = editingFlat.status === 'PAID' ? totalDue : 0;
-
-    const { error } = await supabase
-      .from('flats')
-      .update({
-        tenant_name: editingFlat.tenant_name,
-        phone: editingFlat.phone,
-        rent: rent,
-        water_bill: water,
-        electricity: electricity,
-        maintenance: maintenance,
-        status: editingFlat.status,
-        paid_amount: paid_amount
-      })
-      .eq('flat_no', editingFlat.flat_no);
-
-    setSaving(false);
     if (error) {
-      alert(`Failed to update tenant details: ${error.message}`);
-      console.error('Supabase Update Error:', error);
+      console.error('Error updating flat:', error);
     } else {
-      setEditingFlat(null);
       fetchFlats();
     }
   };
-
-  const handleMonthlyReset = async () => {
-    if (!confirm('Are you sure you want to reset all flats to UNPAID for the new month?')) return;
-    
-    const { error } = await supabase
-      .from('flats')
-      .update({ status: 'UNPAID', paid_amount: 0 })
-      .neq('flat_no', '');
-
-    if (error) {
-      alert('Failed to perform monthly reset.');
-      console.error(error);
-    } else {
-      fetchFlats();
-      alert('All flats have been reset to UNPAID successfully!');
-    }
-  };
-
-  const totalCollected = flats.filter(f => f.status === 'PAID').reduce((acc, f) => acc + (f.rent + (f.water_bill || 0) + (f.electricity || 0) + (f.maintenance || 0)), 0);
-  const totalPending = flats.filter(f => f.status === 'UNPAID').reduce((acc, f) => acc + (f.rent + (f.water_bill || 0) + (f.electricity || 0) + (f.maintenance || 0)), 0);
-
-  const handleExportPDF = () => {
-    const rowsHTML = flats.map(f => {
-      const total = f.rent + (f.water_bill || 0) + (f.electricity || 0) + (f.maintenance || 0);
-      return '<tr>' +
-        '<td style="padding: 6px 8px; border: 1px solid #ddd; font-weight: bold;">Flat ' + f.flat_no + '</td>' +
-        '<td style="padding: 6px 8px; border: 1px solid #ddd;">' + f.tenant_name + '</td>' +
-        '<td style="padding: 6px 8px; border: 1px solid #ddd;">' + f.phone + '</td>' +
-        '<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">₹' + total.toLocaleString('en-IN') + '</td>' +
-        '<td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: ' + (f.status === 'PAID' ? 'green' : 'orange') + ';">' + f.status + '</td>' +
-        '</tr>';
-    }).join('');
-
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow?.document;
-    if (!doc) return;
-
-    doc.open();
-    doc.write(
-      '<html>' +
-        '<head>' +
-          '<title>Rental Summary Report</title>' +
-          '<style>' +
-            'body { font-family: Arial, sans-serif; padding: 15px; color: #333; }' +
-            'h1 { font-size: 18px; margin-bottom: 2px; }' +
-            'p { font-size: 11px; color: #666; margin-top: 0; }' +
-            'table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }' +
-            'th { background-color: #f3f4f6; padding: 8px; border: 1px solid #ddd; text-align: left; }' +
-            '.summary { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }' +
-          '</style>' +
-        '</head>' +
-        '<body>' +
-          '<div>' +
-            '<h1>Rental Management Summary Report</h1>' +
-            '<p>Generated for: ' + currentMonth + '</p>' +
-          '</div>' +
-          '<div class="summary">' +
-            '<div><strong>Total Collected:</strong> ₹' + totalCollected.toLocaleString('en-IN') + '</div>' +
-            '<div><strong>Total Pending:</strong> ₹' + totalPending.toLocaleString('en-IN') + '</div>' +
-          '</div>' +
-          '<table>' +
-            '<thead>' +
-              '<tr>' +
-                '<th>Flat</th>' +
-                '<th>Tenant Name</th>' +
-                '<th>Phone</th>' +
-                '<th style="text-align: right;">Total Due</th>' +
-                '<th style="text-align: center;">Status</th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tbody>' +
-              rowsHTML +
-            '</tbody>' +
-          '</table>' +
-        '</body>' +
-      '</html>'
-    );
-    doc.close();
-
-    setTimeout(() => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      document.body.removeChild(iframe);
-    }, 500);
-  };
-
-  const filteredFlats = flats.filter((flat) => {
-    const matchesSearch = 
-      flat.flat_no.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      flat.tenant_name.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === 'ALL' || flat.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Dashboard Summary */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+    <main className="min-h-screen bg-gray-50 p-6 sm:p-10">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Rental Management Dashboard</h1>
-            <p className="text-sm text-gray-500">20 Residential Flats - Full Itemized Billing System</p>
+            <h1 className="text-2xl font-extrabold text-gray-900">Rental Management Dashboard</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Manage tenants, track utility bills, and send WhatsApp payment links.</p>
           </div>
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">
-              <p className="text-xs text-emerald-600 font-medium">Collected</p>
-              <p className="text-lg font-bold text-emerald-700">₹{totalCollected.toLocaleString('en-IN')}</p>
-            </div>
-            <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl">
-              <p className="text-xs text-amber-600 font-medium">Pending</p>
-              <p className="text-lg font-bold text-amber-700">₹{totalPending.toLocaleString('en-IN')}</p>
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={handleExportPDF}
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2.5 rounded-xl text-xs font-semibold transition border border-blue-200"
-                title="Print or Save as PDF"
-              >
-                📥 Export PDF
-              </button>
-              <button 
-                onClick={handleMonthlyReset}
-                className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2.5 rounded-xl text-xs font-semibold transition border border-rose-200"
-                title="Reset for New Month"
-              >
-                🔄 Monthly Reset
-              </button>
-              <button 
-                onClick={fetchFlats}
-                className="bg-gray-100 hover:bg-gray-200 px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-700 transition"
-              >
-                🔄 Refresh
-              </button>
-            </div>
+          <div className="bg-emerald-50 text-emerald-800 text-xs font-semibold px-4 py-2 rounded-xl border border-emerald-100">
+            Connected to Supabase Live
           </div>
-        </div>
+        </header>
 
-        {/* Search and Filter Controls */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-3 justify-between items-center">
-          <div className="w-full sm:w-80">
-            <input
-              type="text"
-              placeholder="🔍 Search flat no or tenant name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-gray-50"
-            />
-          </div>
-          <div className="flex gap-1.5 w-full sm:w-auto">
-            <button
-              onClick={() => setStatusFilter('ALL')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-semibold transition ${
-                statusFilter === 'ALL' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              All Flats
-            </button>
-            <button
-              onClick={() => setStatusFilter('PAID')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-semibold transition ${
-                statusFilter === 'PAID' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-              }`}
-            >
-              Paid
-            </button>
-            <button
-              onClick={() => setStatusFilter('UNPAID')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-semibold transition ${
-                statusFilter === 'UNPAID' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-              }`}
-            >
-              Unpaid
-            </button>
-          </div>
-        </div>
-
-        {/* Flats Grid */}
         {loading ? (
-          <div className="text-center py-20 text-gray-500">Loading flat details...</div>
-        ) : filteredFlats.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 text-gray-500">
-            No flats found matching your search criteria.
-          </div>
+          <div className="text-center py-20 text-gray-500 text-sm">Loading flats...</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredFlats.map((flat) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {flats.map((flat) => {
               const water = flat.water_bill || 0;
               const electricity = flat.electricity || 0;
               const maintenance = flat.maintenance || 0;
               const totalDue = flat.rent + water + electricity + maintenance;
-              
+
               const whatsappMessage = encodeURIComponent(
-                flat.status === 'PAID'
-                  ? `Hello ${flat.tenant_name},\n\n` +
-                    `✅ *PAYMENT RECEIPT - Flat ${flat.flat_no}*\n` +
-                    `We have successfully received your full payment of ₹${totalDue.toLocaleString('en-IN')} for this month.\n\n` +
-                    `Thank you!`
-                  : `Hello ${flat.tenant_name},\n\n` +
-                    `Here is your itemized rent bill breakdown for Flat ${flat.flat_no}:\n` +
-                    `• Base Rent: ₹${flat.rent.toLocaleString('en-IN')}\n` +
-                    `• Water Bill: ₹${water.toLocaleString('en-IN')}\n` +
-                    `• Electricity: ₹${electricity.toLocaleString('en-IN')}\n` +
-                    `• Maintenance: ₹${maintenance.toLocaleString('en-IN')}\n` +
-                    `-----------------------------\n` +
-                    `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
-                    `Pay securely online here:\n` +
-                    `https://rent-app-mauve.vercel.app/pay/${flat.flat_no}\n\n` +
-                    `Thank you!`
+                `Hello ${flat.tenant_name},\n\n` +
+                `Here is your itemized rent bill breakdown for Flat ${flat.flat_no}:\n` +
+                `• Base Rent: ₹${flat.rent.toLocaleString('en-IN')}\n` +
+                `• Water Bill: ₹${water.toLocaleString('en-IN')}\n` +
+                `• Electricity: ₹${electricity.toLocaleString('en-IN')}\n` +
+                `• Maintenance: ₹${maintenance.toLocaleString('en-IN')}\n` +
+                `--------------------\n` +
+                `❖ Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}\n\n` +
+                `Pay securely online here:\n` +
+                `https://rent-app-mauve.vercel.app/pay/${flat.flat_no}\n\n` +
+                `Thank you!`
               );
 
               const whatsappUrl = `https://wa.me/${flat.phone}?text=${whatsappMessage}`;
 
               return (
-                <div key={flat.flat_no} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <span className="text-xs font-bold tracking-wider text-gray-400 uppercase">Flat {flat.flat_no}</span>
-                        <h3 className="text-lg font-semibold text-gray-800">{flat.tenant_name}</h3>
-                        <p className="text-xs text-gray-500">{flat.phone}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          flat.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {flat.status}
-                        </span>
-                        <button
-                          onClick={() => setEditingFlat(flat)}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
-                        >
-                          ✏️ Edit
-                        </button>
-                      </div>
+                <div key={flat.flat_no} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-5">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Flat {flat.flat_no}</span>
+                      <h3 className="text-lg font-semibold text-gray-800">{flat.tenant_name}</h3>
+                      <p className="text-xs text-gray-500">{flat.phone}</p>
                     </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      flat.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {flat.status}
+                    </span>
+                  </div>
 
-                    {/* Bill Breakdown */}
-                    <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1 mb-4 text-gray-600">
-                      <div className="flex justify-between"><span>Base Rent:</span> <span>₹{flat.rent.toLocaleString('en-IN')}</span></div>
-                      <div className="flex justify-between"><span>Water Bill:</span> <span>₹{water.toLocaleString('en-IN')}</span></div>
-                      <div className="flex justify-between"><span>Electricity:</span> <span>₹{electricity.toLocaleString('en-IN')}</span></div>
-                      <div className="flex justify-between"><span>Maintenance:</span> <span>₹{maintenance.toLocaleString('en-IN')}</span></div>
-                      <div className="border-t border-gray-200 pt-1 mt-1 flex justify-between font-bold text-gray-900">
-                        <span>Total Due:</span> <span>₹{totalDue.toLocaleString('en-IN')}</span>
-                      </div>
+                  <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-2 text-gray-600 border border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span>Base Rent:</span>
+                      <span className="font-medium text-gray-800">₹{flat.rent.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Water Bill:</span>
+                      <input
+                        type="number"
+                        value={flat.water_bill || ''}
+                        onChange={(e) => handleUpdate(flat.flat_no, 'water_bill', parseFloat(e.target.value) || 0)}
+                        className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Electricity:</span>
+                      <input
+                        type="number"
+                        value={flat.electricity || ''}
+                        onChange={(e) => handleUpdate(flat.flat_no, 'electricity', parseFloat(e.target.value) || 0)}
+                        className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Maintenance:</span>
+                      <input
+                        type="number"
+                        value={flat.maintenance || ''}
+                        onChange={(e) => handleUpdate(flat.flat_no, 'maintenance', parseFloat(e.target.value) || 0)}
+                        className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900 text-sm">
+                      <span>Total Due:</span>
+                      <span>₹{totalDue.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="space-y-2 pt-2 border-t border-gray-100">
-                    <div className="flex gap-2">
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`flex-1 py-2 px-2 rounded-xl text-xs font-medium text-center transition flex items-center justify-center gap-1 text-white ${
-                          flat.status === 'PAID' ? 'bg-teal-600 hover:bg-teal-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                        }`}
-                      >
-                        {flat.status === 'PAID' ? '💬 Receipt' : '💬 WhatsApp'}
-                      </a>
-                      <button
-                        onClick={() => setQrFlat(flat)}
-                        className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-2 px-2 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1"
-                      >
-                        📷 Show QR
-                      </button>
-                    </div>
-
-                    {flat.status !== 'PAID' ? (
-                      <button
-                        onClick={() => updateStatus(flat.flat_no, 'PAID', totalDue)}
-                        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2 px-3 rounded-xl text-xs font-medium transition"
-                      >
-                        Mark Paid
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => updateStatus(flat.flat_no, 'UNPAID', totalDue)}
-                        className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded-xl text-xs font-medium transition"
-                      >
-                        Reset Status
-                      </button>
-                    )}
+                  <div className="flex gap-3">
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl text-xs text-center transition shadow-sm flex items-center justify-center gap-2"
+                    >
+                      💬 Send WhatsApp Bill
+                    </a>
+                    <button
+                      onClick={() => handleUpdate(flat.flat_no, 'status', flat.status === 'PAID' ? 'PENDING' : 'PAID')}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition ${
+                        flat.status === 'PAID'
+                          ? 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          : 'border-emerald-600 text-emerald-600 hover:bg-emerald-50'
+                      }`}
+                    >
+                      Mark {flat.status === 'PAID' ? 'Pending' : 'Paid'}
+                    </button>
                   </div>
                 </div>
               );
             })}
-          </div>
-        )}
-
-        {/* QR Code Modal */}
-        {qrFlat && (() => {
-          const water = qrFlat.water_bill || 0;
-          const electricity = qrFlat.electricity || 0;
-          const maintenance = qrFlat.maintenance || 0;
-          const totalDue = qrFlat.rent + water + electricity + maintenance;
-          const upiString = `upi://pay?pa=${DAD_UPI_ID}&pn=Property%20Owner&am=${totalDue}&cu=INR&tn=Rent%20for%20Flat%20${qrFlat.flat_no}&amMode=0`;
-          const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiString)}`;
-
-          return (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-gray-100 text-center space-y-4">
-                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <h3 className="text-base font-bold text-gray-900">Scan to Pay - Flat {qrFlat.flat_no}</h3>
-                  <button 
-                    onClick={() => setQrFlat(null)}
-                    className="text-gray-400 hover:text-gray-600 text-lg font-bold"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Tenant: <span className="font-semibold text-gray-800">{qrFlat.tenant_name}</span></p>
-                  <p className="text-lg font-extrabold text-gray-900">₹{totalDue.toLocaleString('en-IN')}</p>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 inline-block">
-                  <img src={qrImageUrl} alt="UPI QR Code" className="w-48 h-48 mx-auto rounded-lg" />
-                </div>
-
-                <p className="text-[11px] text-gray-400">
-                  Scan using GPay, PhonePe, or Paytm. Amount is locked automatically.
-                </p>
-
-                <button
-                  onClick={() => setQrFlat(null)}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2.5 rounded-xl text-xs font-semibold transition"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Edit Tenant Modal */}
-        {editingFlat && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-gray-100 space-y-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                <h3 className="text-lg font-bold text-gray-900">Edit Flat {editingFlat.flat_no}</h3>
-                <button 
-                  onClick={() => setEditingFlat(null)}
-                  className="text-gray-400 hover:text-gray-600 text-lg"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveEdit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Tenant Name</label>
-                  <input
-                    type="text"
-                    value={editingFlat.tenant_name}
-                    onChange={(e) => setEditingFlat({ ...editingFlat, tenant_name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Phone Number (with Country Code)</label>
-                  <input
-                    type="text"
-                    value={editingFlat.phone}
-                    onChange={(e) => setEditingFlat({ ...editingFlat, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Base Rent (₹)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={editingFlat.rent ?? ''}
-                      onChange={(e) => setEditingFlat({ ...editingFlat, rent: e.target.value === '' ? '' as any : Number(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Water Bill (₹)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={editingFlat.water_bill ?? ''}
-                      onChange={(e) => setEditingFlat({ ...editingFlat, water_bill: e.target.value === '' ? '' as any : Number(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Electricity (₹)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={editingFlat.electricity ?? ''}
-                      onChange={(e) => setEditingFlat({ ...editingFlat, electricity: e.target.value === '' ? '' as any : Number(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Maintenance (₹)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={editingFlat.maintenance ?? ''}
-                      onChange={(e) => setEditingFlat({ ...editingFlat, maintenance: e.target.value === '' ? '' as any : Number(e.target.value) })}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Status</label>
-                  <select
-                    value={editingFlat.status}
-                    onChange={(e) => setEditingFlat({ ...editingFlat, status: e.target.value as 'PAID' | 'UNPAID' })}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  >
-                    <option value="UNPAID">UNPAID</option>
-                    <option value="PAID">PAID</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingFlat(null)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-medium transition disabled:opacity-50"
-                  >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </div>
           </div>
         )}
       </div>
