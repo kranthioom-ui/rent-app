@@ -7,8 +7,6 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const DAD_UPI_ID = "your-upi-id@upi"; 
-
 interface Flat {
   flat_no: string;
   tenant_name: string;
@@ -26,6 +24,8 @@ export default function RentalDashboard() {
   const [loading, setLoading] = useState(true);
   const [editingFlat, setEditingFlat] = useState<Flat | null>(null);
   const [qrFlat, setQrFlat] = useState<Flat | null>(null);
+  const [paymentLink, setPaymentLink] = useState<string>('');
+  const [generatingLink, setGeneratingLink] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currentMonth, setCurrentMonth] = useState('');
   
@@ -56,6 +56,18 @@ export default function RentalDashboard() {
   useEffect(() => {
     fetchFlats();
     setCurrentMonth(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
+
+    // Real-time Supabase Subscription to reflect automated payments instantly
+    const channel = supabase
+      .channel('flats-realtime')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'flats' }, () => {
+        fetchFlats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const updateStatus = async (flat_no: string, status: 'PAID' | 'UNPAID', totalAmount: number) => {
@@ -120,6 +132,35 @@ export default function RentalDashboard() {
     } else {
       fetchFlats();
       alert('All flats have been reset to UNPAID successfully!');
+    }
+  };
+
+  const handleShowQR = async (flat: Flat) => {
+    setQrFlat(flat);
+    setGeneratingLink(true);
+    setPaymentLink('');
+
+    const totalDue = flat.rent + (flat.water_bill || 0) + (flat.electricity || 0) + (flat.maintenance || 0);
+
+    try {
+      const res = await fetch('/api/create-payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flat_no: flat.flat_no,
+          tenant_name: flat.tenant_name,
+          phone: flat.phone,
+          amount: totalDue,
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        setPaymentLink(data.url);
+      }
+    } catch (err) {
+      console.error('Failed to generate payment link:', err);
+    } finally {
+      setGeneratingLink(false);
     }
   };
 
@@ -212,7 +253,7 @@ export default function RentalDashboard() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Rental Management Dashboard</h1>
-            <p className="text-sm text-gray-500">20 Residential Flats - Full Itemized Billing System</p>
+            <p className="text-sm text-gray-500">20 Residential Flats - Automated UPI Payment System</p>
           </div>
           <div className="flex flex-wrap gap-3 items-center">
             <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">
@@ -302,8 +343,6 @@ export default function RentalDashboard() {
               const maintenance = flat.maintenance || 0;
               const totalDue = flat.rent + water + electricity + maintenance;
 
-              const paymentLink = `https://rent-app-mauve.vercel.app`;
-              
               const whatsappMessage = encodeURIComponent(
                 flat.status === 'PAID'
                   ? `Hello ${flat.tenant_name},\n\n` +
@@ -318,8 +357,8 @@ export default function RentalDashboard() {
                     `• Maintenance: ₹${maintenance.toLocaleString('en-IN')}\n` +
                     `-----------------------------\n` +
                     `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
-                    `Pay securely online here:\n` +
-                    `${paymentLink}\n\n` +
+                    `Pay instantly via UPI (GPay/PhonePe/Paytm):\n` +
+                    `https://your-vercel-domain.vercel.app\n\n` +
                     `Thank you!`
               );
 
@@ -375,7 +414,7 @@ export default function RentalDashboard() {
                         {flat.status === 'PAID' ? '💬 Receipt' : '💬 WhatsApp'}
                       </a>
                       <button
-                        onClick={() => setQrFlat(flat)}
+                        onClick={() => handleShowQR(flat)}
                         className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-2 px-2 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1"
                       >
                         📷 Show QR
@@ -404,20 +443,22 @@ export default function RentalDashboard() {
           </div>
         )}
 
-        {/* QR Code Modal */}
+        {/* QR Code Modal with Live Automated Razorpay Integration */}
         {qrFlat && (() => {
           const water = qrFlat.water_bill || 0;
           const electricity = qrFlat.electricity || 0;
           const maintenance = qrFlat.maintenance || 0;
           const totalDue = qrFlat.rent + water + electricity + maintenance;
-          const upiString = `upi://pay?pa=${DAD_UPI_ID}&pn=Property%20Owner&am=${totalDue}&cu=INR&tn=Rent%20for%20Flat%20${qrFlat.flat_no}&amMode=0`;
-          const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiString)}`;
+          
+          const qrImageUrl = paymentLink
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(paymentLink)}`
+            : '';
 
           return (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-gray-100 text-center space-y-4">
                 <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <h3 className="text-base font-bold text-gray-900">Scan to Pay - Flat {qrFlat.flat_no}</h3>
+                  <h3 className="text-base font-bold text-gray-900">Automated UPI QR - Flat {qrFlat.flat_no}</h3>
                   <button 
                     onClick={() => setQrFlat(null)}
                     className="text-gray-400 hover:text-gray-600 text-lg font-bold"
@@ -432,11 +473,21 @@ export default function RentalDashboard() {
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 inline-block">
-                  <img src={qrImageUrl} alt="UPI QR Code" className="w-48 h-48 mx-auto rounded-lg" />
+                  {generatingLink ? (
+                    <div className="w-48 h-48 flex items-center justify-center text-xs text-gray-400">
+                      Generating payment QR...
+                    </div>
+                  ) : qrImageUrl ? (
+                    <img src={qrImageUrl} alt="Automated UPI QR Code" className="w-48 h-48 mx-auto rounded-lg" />
+                  ) : (
+                    <div className="w-48 h-48 flex items-center justify-center text-xs text-rose-500">
+                      Failed to load payment link.
+                    </div>
+                  )}
                 </div>
 
-                <p className="text-[11px] text-gray-400">
-                  Scan using GPay, PhonePe, or Paytm. Amount is locked automatically.
+                <p className="text-[11px] text-gray-500">
+                  ⚡ Once paid via GPay, PhonePe, or Paytm, this dashboard will update to <strong>PAID</strong> automatically!
                 </p>
 
                 <button
