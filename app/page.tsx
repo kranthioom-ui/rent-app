@@ -22,13 +22,20 @@ export default function LoginPage() {
     setErrorMsg('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Race the login request against a 6-second timeout
+      const loginPromise = supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) {
-        setErrorMsg(error.message);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timed out. Please check your network or Supabase keys.')), 6000)
+      );
+
+      const res: any = await Promise.race([loginPromise, timeoutPromise]);
+
+      if (res.error) {
+        setErrorMsg(res.error.message);
         setLoading(false);
       } else {
         router.push('/');
