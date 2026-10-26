@@ -317,7 +317,7 @@ export default function RentalDashboard() {
                     `-----------------------------\n` +
                     `📌 *Total Amount Due: ₹${totalDue.toLocaleString('en-IN')}*\n\n` +
                     `Pay securely online here:\n` +
-                    `https://rent-app-mauve.vercel.app\n\n` +
+                    `https://rent-app-mauve.vercel.app/pay/${flat.flat_no}\n\n` +
                     `Thank you!`
               );
 
