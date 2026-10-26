@@ -45,7 +45,7 @@ export default function Dashboard() {
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div>
             <h1 className="text-2xl font-extrabold text-gray-900">Rental Management Dashboard</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Manage tenants, track utility bills, and send WhatsApp payment links.</p>
+            <p className="text-xs text-gray-500 mt-0.5">Manage tenants, update details, track utility bills, and send WhatsApp payment links.</p>
           </div>
           <div className="bg-emerald-50 text-emerald-800 text-xs font-semibold px-4 py-2 rounded-xl border border-emerald-100">
             Connected to Supabase Live
@@ -57,15 +57,16 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {flats.map((flat) => {
+              const rent = flat.rent || 0;
               const water = flat.water_bill || 0;
               const electricity = flat.electricity || 0;
               const maintenance = flat.maintenance || 0;
-              const totalDue = flat.rent + water + electricity + maintenance;
+              const totalDue = rent + water + electricity + maintenance;
 
               const whatsappMessage = encodeURIComponent(
                 `Hello ${flat.tenant_name},\n\n` +
                 `Here is your itemized rent bill breakdown for Flat ${flat.flat_no}:\n` +
-                `• Base Rent: ₹${flat.rent.toLocaleString('en-IN')}\n` +
+                `• Base Rent: ₹${rent.toLocaleString('en-IN')}\n` +
                 `• Water Bill: ₹${water.toLocaleString('en-IN')}\n` +
                 `• Electricity: ₹${electricity.toLocaleString('en-IN')}\n` +
                 `• Maintenance: ₹${maintenance.toLocaleString('en-IN')}\n` +
@@ -83,8 +84,20 @@ export default function Dashboard() {
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Flat {flat.flat_no}</span>
-                      <h3 className="text-lg font-semibold text-gray-800">{flat.tenant_name}</h3>
-                      <p className="text-xs text-gray-500">{flat.phone}</p>
+                      <input
+                        type="text"
+                        value={flat.tenant_name || ''}
+                        onChange={(e) => handleUpdate(flat.flat_no, 'tenant_name', e.target.value)}
+                        className="block mt-1 font-semibold text-gray-800 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500"
+                        placeholder="Tenant Name"
+                      />
+                      <input
+                        type="text"
+                        value={flat.phone || ''}
+                        onChange={(e) => handleUpdate(flat.flat_no, 'phone', e.target.value)}
+                        className="block mt-1 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-emerald-500"
+                        placeholder="Phone (e.g. 919878901234)"
+                      />
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                       flat.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
@@ -96,7 +109,12 @@ export default function Dashboard() {
                   <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-2 text-gray-600 border border-gray-100">
                     <div className="flex justify-between items-center">
                       <span>Base Rent:</span>
-                      <span className="font-medium text-gray-800">₹{flat.rent.toLocaleString('en-IN')}</span>
+                      <input
+                        type="number"
+                        value={flat.rent || ''}
+                        onChange={(e) => handleUpdate(flat.flat_no, 'rent', parseFloat(e.target.value) || 0)}
+                        className="w-24 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
+                      />
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Water Bill:</span>
@@ -104,7 +122,7 @@ export default function Dashboard() {
                         type="number"
                         value={flat.water_bill || ''}
                         onChange={(e) => handleUpdate(flat.flat_no, 'water_bill', parseFloat(e.target.value) || 0)}
-                        className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
+                        className="w-24 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                     <div className="flex justify-between items-center">
@@ -113,7 +131,7 @@ export default function Dashboard() {
                         type="number"
                         value={flat.electricity || ''}
                         onChange={(e) => handleUpdate(flat.flat_no, 'electricity', parseFloat(e.target.value) || 0)}
-                        className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
+                        className="w-24 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                     <div className="flex justify-between items-center">
@@ -122,7 +140,7 @@ export default function Dashboard() {
                         type="number"
                         value={flat.maintenance || ''}
                         onChange={(e) => handleUpdate(flat.flat_no, 'maintenance', parseFloat(e.target.value) || 0)}
-                        className="w-20 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
+                        className="w-24 bg-white border border-gray-200 rounded px-2 py-1 text-right font-medium text-gray-800 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                     <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900 text-sm">
