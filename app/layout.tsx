@@ -11,11 +11,20 @@ export const metadata: Metadata = {
     siteName: 'Rental Management Portal',
     locale: 'en_IN',
     type: 'website',
+    images: [
+      {
+        url: '/logo.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Hyderabad Rental Management Logo',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Hyderabad Rental Management Portal',
     description: 'Secure executive dashboard for property billing and tenant tracking.',
+    images: ['/logo.jpg'],
   },
 };
 
