@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://rent-app-mauve.vercel.app'), // Sets the base URL for relative paths
+  metadataBase: new URL('https://rent-app-mauve.vercel.app'),
   title: 'Hyderabad Rental Management Portal',
   description: 'Secure executive dashboard for property billing, tenant records, and automated collections.',
   openGraph: {
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: 'https://rent-app-mauve.vercel.app/logo.jpg', // Full absolute URL
+        url: 'https://rent-app-mauve.vercel.app/logo.jpg',
         width: 1200,
         height: 630,
         alt: 'Hyderabad Rental Management Logo',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Hyderabad Rental Management Portal',
     description: 'Secure executive dashboard for property billing and tenant tracking.',
-    images: ['https://rent-app-mauve.vercel.app/logo.jpg'], // Full absolute URL
+    images: ['https://rent-app-mauve.vercel.app/logo.jpg'],
   },
 };
 
