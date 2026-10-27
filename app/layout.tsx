@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Hyderabad Rental Management Portal',
@@ -6,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Hyderabad Rental Management Portal',
     description: 'Secure executive dashboard for property billing and tenant tracking.',
-    url: 'https://rent-app-mauve.vercel.app', // Update with your actual Vercel domain if different
+    url: 'https://rent-app-mauve.vercel.app',
     siteName: 'Rental Management Portal',
     locale: 'en_IN',
     type: 'website',
@@ -17,3 +18,17 @@ export const metadata: Metadata = {
     description: 'Secure executive dashboard for property billing and tenant tracking.',
   },
 };
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className="bg-[#050507] text-[#ededed] antialiased">
+        {children}
+      </body>
+    </html>
+  );
+}
