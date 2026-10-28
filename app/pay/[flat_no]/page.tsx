@@ -144,4 +144,35 @@ function PaymentContent() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-gray-5
+          <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-2 text-gray-600 border border-gray-100">
+            <div className="flex justify-between"><span>Base Rent:</span> <span>₹{flat.rent.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between"><span>Water Bill:</span> <span>₹{water.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between"><span>Electricity:</span> <span>₹{electricity.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between"><span>Maintenance:</span> <span>₹{maintenance.toLocaleString('en-IN')}</span></div>
+            <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900 text-sm">
+              <span>Total Due:</span> <span>₹{totalDue.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleRazorpayPayment}
+            disabled={paying}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-sm disabled:opacity-50"
+          >
+            {paying ? 'Opening Payment Gateway...' : `Pay ₹${totalDue.toLocaleString('en-IN')} Securely`}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Suspense fallback={<div className="text-gray-500 text-sm">Loading...</div>}>
+        <PaymentContent />
+      </Suspense>
+    </main>
+  );
+}
