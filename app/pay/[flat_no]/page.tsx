@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import Script from 'next/script';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -170,6 +171,7 @@ function PaymentContent() {
 export default function PaymentPage() {
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <Suspense fallback={<div className="text-gray-500 text-sm">Loading...</div>}>
         <PaymentContent />
       </Suspense>
