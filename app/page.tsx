@@ -419,70 +419,70 @@ export default function Dashboard() {
                           value={flat.phone || ''}
                           onChange={(e) => handleInputChange(flat.flat_no, 'phone', e.target.value)}
                           onBlur={(e) => handleBlur(flat.flat_no, 'phone', e.target.value)}
-                          className="w-full text-xs font-semibold text-slate-500 bg-transparent py-0.5 transition outline-none font-mono focus:text-slate-900"
+                          className="w-full text-xs font-semibold text-slate-900 bg-transparent py-0.5 transition outline-none font-mono focus:text-slate-900"
                           placeholder="+91 Phone Number"
                         />
                       </div>
                     </div>
 
                     <div className="bg-slate-50 rounded-xl p-4 space-y-3 text-xs border border-slate-200/80">
-                      <div className="flex justify-between items-center text-slate-600 font-medium">
+                      <div className="flex justify-between items-center text-slate-900 font-medium">
                         <span>Base Rent</span>
                         <div className="flex items-center gap-1">
-                          <span className="text-slate-400 font-semibold">₹</span>
+                          <span className="text-slate-500 font-semibold">₹</span>
                           <input
                             type="number"
                             value={flat.rent || ''}
                             onChange={(e) => handleInputChange(flat.flat_no, 'rent', parseFloat(e.target.value) || 0)}
                             onBlur={(e) => handleBlur(flat.flat_no, 'rent', parseFloat(e.target.value) || 0)}
-                            className="w-24 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-right font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-sm"
+                            className="w-24 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-right font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-sm"
                           />
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center text-slate-600 font-medium">
+                      <div className="flex justify-between items-center text-slate-900 font-medium">
                         <span>Water Bill</span>
                         <div className="flex items-center gap-1">
-                          <span className="text-slate-400 font-semibold">₹</span>
+                          <span className="text-slate-500 font-semibold">₹</span>
                           <input
                             type="number"
                             value={flat.water_bill || ''}
                             onChange={(e) => handleInputChange(flat.flat_no, 'water_bill', parseFloat(e.target.value) || 0)}
                             onBlur={(e) => handleBlur(flat.flat_no, 'water_bill', parseFloat(e.target.value) || 0)}
-                            className="w-24 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-right font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-sm"
+                            className="w-24 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-right font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-sm"
                           />
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center text-slate-600 font-medium">
+                      <div className="flex justify-between items-center text-slate-900 font-medium">
                         <span>Electricity</span>
                         <div className="flex items-center gap-1">
-                          <span className="text-slate-400 font-semibold">₹</span>
+                          <span className="text-slate-500 font-semibold">₹</span>
                           <input
                             type="number"
                             value={flat.electricity || ''}
                             onChange={(e) => handleInputChange(flat.flat_no, 'electricity', parseFloat(e.target.value) || 0)}
                             onBlur={(e) => handleBlur(flat.flat_no, 'electricity', parseFloat(e.target.value) || 0)}
-                            className="w-24 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-right font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-sm"
+                            className="w-24 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-right font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-sm"
                           />
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center text-slate-600 font-medium">
+                      <div className="flex justify-between items-center text-slate-900 font-medium">
                         <span>Maintenance</span>
                         <div className="flex items-center gap-1">
-                          <span className="text-slate-400 font-semibold">₹</span>
+                          <span className="text-slate-500 font-semibold">₹</span>
                           <input
                             type="number"
                             value={flat.maintenance || ''}
                             onChange={(e) => handleInputChange(flat.flat_no, 'maintenance', parseFloat(e.target.value) || 0)}
                             onBlur={(e) => handleBlur(flat.flat_no, 'maintenance', parseFloat(e.target.value) || 0)}
-                            className="w-24 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-right font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-sm"
+                            className="w-24 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-right font-bold text-slate-900 focus:outline-none focus:border-indigo-600 shadow-sm"
                           />
                         </div>
                       </div>
 
-                      <div className="border-t border-slate-200 pt-2.5 flex justify-between items-center font-bold text-slate-900 text-xs">
+                      <div className="border-t border-slate-300 pt-2.5 flex justify-between items-center font-bold text-slate-900 text-xs">
                         <span>Total Amount Due</span>
                         <span className="text-indigo-600 text-sm font-black">₹{totalDue.toLocaleString('en-IN')}</span>
                       </div>
@@ -501,7 +501,7 @@ export default function Dashboard() {
                         onClick={() => handleStatusToggle(flat.flat_no, flat.status)}
                         className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition shadow-sm ${
                           isPaid
-                            ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            ? 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
                             : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                         }`}
                       >
@@ -520,32 +520,32 @@ export default function Dashboard() {
       {/* ================= ARCHIVE HISTORY MODAL ================= */}
       {showHistoryModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-slate-300 rounded-2xl max-w-4xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b pb-4">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Archived Monthly Statements</h2>
-                <p className="text-xs text-slate-500">Historical records of previously reset billing cycles</p>
+                <p className="text-xs font-semibold text-slate-600">Historical records of previously reset billing cycles</p>
               </div>
               <button 
                 onClick={() => setShowHistoryModal(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl border hover:bg-slate-50"
+                className="p-2 text-slate-500 hover:text-slate-800 rounded-xl border border-slate-300 hover:bg-slate-50"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {availableMonths.length === 0 ? (
-              <div className="text-center py-12 text-slate-400 text-xs">
+              <div className="text-center py-12 text-slate-500 text-xs font-semibold">
                 No archived records found. Records will automatically save here when you click "Reset Cycle".
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-slate-600">Select Billing Month:</span>
+                  <span className="text-xs font-bold text-slate-800">Select Billing Month:</span>
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 focus:outline-none"
+                    className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 focus:outline-none"
                   >
                     {availableMonths.map((m) => (
                       <option key={m} value={m}>{m}</option>
@@ -553,9 +553,9 @@ export default function Dashboard() {
                   </select>
                 </div>
 
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="border border-slate-300 rounded-xl overflow-hidden">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-100 text-slate-700 font-bold border-b">
+                    <thead className="bg-slate-100 text-slate-900 font-black border-b border-slate-300">
                       <tr>
                         <th className="p-3">Flat</th>
                         <th className="p-3">Tenant Name</th>
@@ -568,7 +568,7 @@ export default function Dashboard() {
                         <th className="p-3 text-center">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-200 text-slate-900 font-semibold">
                       {selectedHistoryRecords.map((r) => (
                         <tr key={r.id} className="hover:bg-slate-50">
                           <td className="p-3 font-bold">{r.flat_no}</td>
@@ -578,7 +578,7 @@ export default function Dashboard() {
                           <td className="p-3 text-right">₹{(r.water_bill || 0).toLocaleString('en-IN')}</td>
                           <td className="p-3 text-right">₹{(r.electricity || 0).toLocaleString('en-IN')}</td>
                           <td className="p-3 text-right">₹{(r.maintenance || 0).toLocaleString('en-IN')}</td>
-                          <td className="p-3 text-right font-bold text-indigo-600">₹{(r.total_due || 0).toLocaleString('en-IN')}</td>
+                          <td className="p-3 text-right font-black text-indigo-700">₹{(r.total_due || 0).toLocaleString('en-IN')}</td>
                           <td className="p-3 text-center">
                             <span className={`px-2 py-1 rounded text-[10px] font-bold ${
                               r.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
