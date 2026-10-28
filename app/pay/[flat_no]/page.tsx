@@ -79,7 +79,11 @@ function PaymentContent() {
         handler: async function (response: any) {
           const { error } = await supabase
             .from('flats')
-            .update({ status: 'PAID', paid_amount: totalDue })
+            .update({ 
+              status: 'PAID', 
+              paid_amount: totalDue,
+              paid_at: new Date().toISOString() 
+            })
             .eq('flat_no', flat.flat_no);
 
           if (error) {
