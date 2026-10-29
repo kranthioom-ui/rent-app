@@ -212,7 +212,7 @@ export default function Dashboard() {
       {/* ================= PRINT-ONLY SINGLE PAGE TABLE ================= */}
       <div className="hidden print:block p-6 bg-white text-black font-sans text-xs">
         <div className="mb-4 text-center border-b pb-3">
-          <h1 className="text-lg font-bold">Hyderabad Rental Management - Portfolio Statement</h1>
+          <h1 className="text-lg font-bold">Rental Management Dashboard - Portfolio Statement</h1>
           <p className="text-slate-500">Summary Ledger Overview</p>
         </div>
         <table className="w-full border-collapse border border-slate-300 text-left">
@@ -272,7 +272,7 @@ export default function Dashboard() {
                 <Building2 className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900">Hyderabad Rental Management</h1>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900">Rental Management Dashboard</h1>
                 <p className="text-xs font-medium text-slate-500">Executive Overview & Zero-Fee UPI Command Center</p>
               </div>
             </div>
