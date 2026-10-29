@@ -15,7 +15,8 @@ import {
   Archive,
   Megaphone,
   X,
-  Eye
+  Eye,
+  StickyNote
 } from 'lucide-react';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -438,6 +439,21 @@ export default function Dashboard() {
                             </span>
                           )}
                         </div>
+                      </div>
+
+                      {/* Dad's Note Input Box */}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-amber-600">
+                          <StickyNote className="w-3.5 h-3.5" />
+                        </div>
+                        <input
+                          type="text"
+                          value={flat.note || ''}
+                          onChange={(e) => handleInputChange(flat.flat_no, 'note', e.target.value)}
+                          onBlur={(e) => handleBlur(flat.flat_no, 'note', e.target.value)}
+                          className="w-full bg-amber-50/60 border border-amber-200/80 rounded-xl pl-8 pr-3 py-1.5 text-xs font-medium text-amber-900 placeholder-amber-400/85 focus:outline-none focus:border-amber-400 focus:bg-white transition shadow-sm"
+                          placeholder="Dad's note / reminder..."
+                        />
                       </div>
 
                       <div className="space-y-1.5 pt-1">
