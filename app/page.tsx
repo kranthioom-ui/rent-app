@@ -38,7 +38,7 @@ export default function Dashboard() {
 
   const fetchFlats = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('flats').select('*').order('flat_no', { ascending: true });
+    const { data, error } = await supabase.from('flats').select('*').order('id', { ascending: true });
     if (error) {
       console.error('Error fetching flats:', error);
     } else {
